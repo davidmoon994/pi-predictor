@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🌙 主题颜色（自动适配深色模式） */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* 🌍 全局样式 */
+body {
+  @apply bg-gray-900 text-white font-sans;
+}
+.button-hover {
+  @apply transition duration-300 ease-in-out hover:scale-105 shadow-lg;
+}
+/* ⚠️ 注意：你定义的 .container 会覆盖 Tailwind 默认 container 样式 */
+.main-container {
+  @apply max-w-6xl mx-auto p-6 rounded-lg;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-in-out;
+}
+/* 隐藏水平滚动条 */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
