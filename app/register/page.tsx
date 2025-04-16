@@ -1,21 +1,35 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { auth, db } from "@/lib/firebase"; // 确保你有这个文件
+import { auth, db } from "@lib/firebase"; // 确保你有这个文件
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
-export default function RegisterPage() {
+// RegisterPageWrapper 组件，用于包裹 RegisterPage
+export default function RegisterPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterPage />
+    </Suspense>
+  );
+}
+
+function RegisterPage() {
   const searchParams = useSearchParams();
   const [referrer, setReferrer] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 客户端渲染时获取查询参数
   useEffect(() => {
-    const ref = searchParams.get("ref");
-    if (ref) setReferrer(ref);
-  }, [searchParams]);
+    if (typeof window !== 'undefined') {
+      // 只有在浏览器环境中才使用 useSearchParams
+      const searchParams = new URLSearchParams(window.location.search);
+      const ref = searchParams.get("ref");
+      if (ref) setReferrer(ref);
+    }
+  }, []); // 空依赖数组，确保只在客户端加载时执行一次
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +84,7 @@ export default function RegisterPage() {
         />
 
         {referrer && (
-          <p className="text-sm text-green-400 mb-2">邀请人：{referrer}</p >
+          <p className="text-sm text-green-400 mb-2">邀请人：{referrer}</p>
         )}
 
         <button

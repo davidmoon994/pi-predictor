@@ -2,7 +2,12 @@
 import React, { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 
-export default function KLineChart() {
+// 给组件添加 props 接口，支持 className
+interface KLineChartProps {
+  className?: string; // 新增 className 属性
+}
+
+const KLineChart: React.FC<KLineChartProps> = ({ className }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,5 +65,7 @@ export default function KLineChart() {
     };
   }, []);
 
-  return <div ref={chartRef} style={{ height: 400, width: "100%" }} />;
-}
+  return <div ref={chartRef} className={className} style={{ height: 400, width: "100%" }} />;
+};
+
+export default KLineChart;

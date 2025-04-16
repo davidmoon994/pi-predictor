@@ -70,7 +70,8 @@ export default function HomePage() {
         <PredictionCards />
 
         {/* 第四行：K 线图 */}
-        <KLineChart maxWidth="max-w-[1200px]" height="h-[500px]" />
+        <KLineChart className="max-w-[1200px] h-[500px]" />
+
 
         {/* 第五行：底部菜单栏 */}
         <div className="w-full flex justify-center gap-6 bg-gray-800 py-3 rounded-xl shadow">

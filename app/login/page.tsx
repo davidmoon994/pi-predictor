@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null); // <--- 关键在这里
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

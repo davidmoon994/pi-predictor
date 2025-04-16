@@ -1,6 +1,6 @@
 // app/services/firestore.ts
 import { getFirestore, collection, getDocs, doc, setDoc, getDoc } from "firebase/firestore";
-import { app } from "@/firebase";
+import { app } from "@lib/firebase";
 
 const db = getFirestore(app);
 

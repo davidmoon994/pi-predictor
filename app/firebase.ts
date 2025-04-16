@@ -11,9 +11,12 @@ const firebaseConfig = {
   appId: "1:343913166257:web:0b05ec875561580cb83990"
 };
 
-// Initialize Firebase
+// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
 
-export { app, auth };
+// 初始化服务
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// 导出模块
+export { app, auth, db };
