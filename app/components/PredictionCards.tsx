@@ -1,70 +1,71 @@
-'use client'
+"use client";
+import React, { useState, useEffect } from "react";
 
-import { useRef } from "react";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+// 生成期号的方法：从当前时间开始，每天有288期
+const generateCardData = () => {
+  const currentDate = new Date();
+  const cards = [];
+  for (let i = 0; i < 5; i++) {
+    const date = new Date(currentDate);
+    date.setMinutes(date.getMinutes() + i * 5); // 每5分钟一期
+    const period = `${date.getFullYear().toString().slice(2)}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}${i + 1}`;
+    cards.push({
+      title: period,
+      content: "内容展示",
+      result: `详情${i + 1}`,
+      status: i === 2 ? "active" : i === 1 || i === 3 ? "completed" : "upcoming", // 设置卡片的状态
+    });
+  }
+  return cards;
+};
 
-
-export default function PredictionCards() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft -= 300;
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft += 300;
-    }
-  };
-
-  const cardData = ["前一期", "前二期", "前三期", "下注", "Next", "Later"];
+export default function CardSlider() {
+  const [dummyCards] = useState(generateCardData());
 
   return (
-    <div className="flex flex-col items-center w-full my-4">
-      {/* 第二行：箭头控制 */}
-      <div className="flex space-x-6 mb-6">
-  <button
-    onClick={scrollLeft}
-    className="w-16 h-16 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-white rounded-full shadow-xl hover:scale-110 active:scale-95 transform transition duration-300 ease-in-out flex items-center justify-center"
-  >
-    <FaArrowLeft className="text-3xl drop-shadow-lg" />
-  </button>
-  <button
-    onClick={scrollRight}
-    className="w-16 h-16 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-white rounded-full shadow-xl hover:scale-110 active:scale-95 transform transition duration-300 ease-in-out flex items-center justify-center"
-  >
-    <FaArrowRight className="text-3xl drop-shadow-lg" />
-  </button>
-</div>
+    <div className="overflow-x-hidden flex justify-center items-center w-full py-4">
+      <div className="flex gap-4 w-full max-w-6xl">
+        {/* 左侧：往期已开奖卡片 */}
+        <div
+          className="min-w-[200px] bg-gray-800 p-4 rounded-lg shadow-md hover:scale-105 transition-transform"
+        >
+          <h3 className="text-lg font-bold mb-2">{dummyCards[1].title}</h3>
+          <p className="text-sm text-gray-300">{dummyCards[1].content}</p>
+          <p className="text-green-400 mt-2">{dummyCards[1].result}</p>
+        </div>
 
-      {/* 第三行：滑动卡片 */}
-      <div
-        ref={scrollRef}
-        className="flex space-x-4 overflow-x-auto scrollbar-hide px-4 w-full max-w-6xl"
-      >
-        {cardData.map((title, index) => (
-          <div
-            key={index}
-            className="min-w-[200px] flex-shrink-0 p-[2px] rounded-xl bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 shadow-xl hover:shadow-yellow-400/60 transition-transform transform hover:-translate-y-1 hover:scale-105 animate-fade-in"
-          >
-            <div className="bg-gray-800/70 backdrop-blur-sm rounded-xl p-4 text-center text-white">
-              <h3 className="font-semibold text-lg mb-1">{title}</h3>
-              <p className="text-sm text-gray-400">开奖详情/内容展示</p >
-              {title === "下注" && (
-                <div className="mt-3 flex flex-col space-y-2">
-                  <button className="bg-green-500 text-white px-4 py-1 rounded-xl shadow-md hover:bg-green-600 transition duration-300">
-                    买涨
-                  </button>
-                  <button className="bg-red-500 text-white px-4 py-1 rounded-xl shadow-md hover:bg-red-600 transition duration-300">
-                    买跌
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+        {/* 居中的正在开奖卡片 */}
+        <div
+          className="min-w-[200px] bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 p-4 rounded-lg shadow-lg hover:scale-105 transition-transform"
+        >
+          <h3 className="text-lg font-bold mb-2">{dummyCards[2].title}</h3>
+          <p className="text-sm text-gray-300">{dummyCards[2].content}</p>
+          <p className="text-green-400 mt-2">{dummyCards[2].result}</p>
+        </div>
+
+        {/* 右侧：下一期可立即投注 */}
+        <div
+          className="min-w-[200px] bg-gray-800 p-4 rounded-lg shadow-md hover:scale-105 transition-transform"
+        >
+          <h3 className="text-lg font-bold mb-2">{dummyCards[3].title}</h3>
+          <p className="text-sm text-gray-300">{dummyCards[3].content}</p>
+          <p className="text-green-400 mt-2">{dummyCards[3].result}</p>
+        </div>
+
+        {/* 右二：已经开奖的卡片 */}
+        <div
+          className="min-w-[200px] bg-gray-800 p-4 rounded-lg shadow-md hover:scale-105 transition-transform"
+        >
+          <h3 className="text-lg font-bold mb-2">{dummyCards[4].title}</h3>
+          <p className="text-sm text-gray-300">{dummyCards[4].content}</p>
+          <p className="text-green-400 mt-2">{dummyCards[4].result}</p>
+        </div>
+      </div>
+
+      {/* 控制左右箭头来滑动历史卡片 */}
+      <div className="mt-4 flex justify-center space-x-4">
+        <button className="px-4 py-2 bg-gray-700 rounded text-white hover:bg-gray-600">←</button>
+        <button className="px-4 py-2 bg-gray-700 rounded text-white hover:bg-gray-600">→</button>
       </div>
     </div>
   );

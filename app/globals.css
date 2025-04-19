@@ -26,19 +26,19 @@ body {
 .main-container {
   @apply max-w-6xl mx-auto p-6 rounded-lg;
 }
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
+@keyframes pi-float {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
     opacity: 1;
-    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-40px) scale(0.5) rotate(720deg);
+    opacity: 0;
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-in-out;
+.animate-pi-float {
+  animation: pi-float 3s ease-in-out infinite;
 }
 /* 隐藏水平滚动条 */
 .scrollbar-hide::-webkit-scrollbar {

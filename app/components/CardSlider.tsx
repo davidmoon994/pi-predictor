@@ -1,35 +1,121 @@
-"use client";
-import React from "react";
+'use client';
+import React, { useState } from 'react';
+import PastCard from './PastCard';
+import CurrentCard from './CurrentCard';
+import NextCard from './NextCard';
+import UpcomingCard from './UpcomingCard';
 
-const dummyCards = [
-  { title: "UP", content: "涨", result: "1.21 → 1.23" },
-  { title: "UP", content: "跌", result: "1.23 → 1.19" },
-  { title: "UP", content: "涨", result: "1.18 → 1.22" },
-  { title: "Link", content: "预测下一期", result: "" },
-  { title: "Next", content: "即将开奖", result: "倒计时 02:45" },
-  { title: "Later", content: "下注即将开始", result: "倒计时 04:00" },
+interface CardData {
+  id: string;
+  type: 'past' | 'live' | 'next' | 'upcoming';
+  lockedPrice: number;
+  lastPrice: number;
+  priceChange: number;
+  prizePool: number;
+  upPayout: number;
+  downPayout: number;
+}
+
+const initialCards: CardData[] = [
+  // 8 往期（7张被隐藏、通过箭头可轮动）：
+  ...Array.from({ length: 8 }, (_, i) => ({
+    id: `#${1000 - i}`,
+    type: 'past',
+    lockedPrice: 3.14,
+    lastPrice: 3.11,
+    priceChange: -0.96,
+    prizePool: 1200,
+    upPayout: 1.5,
+    downPayout: 2.1,
+  })),
+  // 当前开奖：
+  {
+    id: '#1001',
+    type: 'live',
+    lockedPrice: 3.15,
+    lastPrice: 3.17,
+    priceChange: 0.63,
+    prizePool: 1400,
+    upPayout: 1.8,
+    downPayout: 1.9,
+  },
+  // 下一期可投注：
+  {
+    id: '#1002',
+    type: 'next',
+    lockedPrice: 3.17,
+    lastPrice: 3.17,
+    priceChange: 0,
+    prizePool: 0,
+    upPayout: 2.0,
+    downPayout: 2.0,
+  },
+  // 即将开始投注：
+  {
+    id: '#1003',
+    type: 'upcoming',
+    lockedPrice: 3.17,
+    lastPrice: 3.17,
+    priceChange: 0,
+    prizePool: 0,
+    upPayout: 0,
+    downPayout: 0,
+  },
 ];
 
 export default function CardSlider() {
-  return (
-    <div className="overflow-x-auto whitespace-nowrap scrollbar-hide px-2 w-full max-w-6xl">
-      <div className="flex gap-4">
-        {dummyCards.map((card, index) => (
-          <div
-            key={index}
-            className="bg-gray-800 min-w-[180px] rounded-lg p-4 shadow-md hover:scale-105 transition-transform"
-          >
-            <h3 className="text-lg font-bold mb-2">{card.title}</h3>
-            <p className="text-sm text-gray-300">{card.content}</p >
-            {card.result && <p className="text-green-400 mt-2">{card.result}</p >}
-            {card.title === "下注" && (
-              <button className="mt-4 bg-yellow-500 hover:bg-yellow-400 text-white px-4 py-2 rounded transition">
-                去下注
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  const [startIndex, setStartIndex] = useState(0);
+
+  // 最多展示 5 张（左2 + 当前 + 右1 + 右2）
+  const visibleCards = initialCards.slice(startIndex, startIndex + 5);
+
+  const handleLeft = () => {
+    if (startIndex > 0) setStartIndex(startIndex - 1);
+  };
+
+  const handleRight = () => {
+    if (startIndex < 8) setStartIndex(startIndex + 1); // 最多滑动到第8个
+  };
+
+  const renderCard = (card: CardData) => {
+    const commonProps = {
+      issueId: card.id,
+      lockedPrice: card.lockedPrice,
+      lastPrice: card.lastPrice,
+      priceChange: card.priceChange,
+      prizePool: card.prizePool,
+      upPayout: card.upPayout,
+      downPayout: card.downPayout,
+    };
+
+    switch (card.type) {
+      case 'past':
+        return <PastCard key={card.id} {...commonProps} />;
+      case 'live':
+        return <CurrentCard key={card.id} {...commonProps} />;
+      case 'next':
+        return <NextCard key={card.id} {...commonProps} />;
+      case 'upcoming':
+        return <UpcomingCard key={card.id} {...commonProps} />;
+    }
+  };
+
+  return (
+    <div className="relative w-full overflow-hidden">
+      <div className="flex justify-center gap-4 px-4 transition-all duration-300">
+        {visibleCards.map(renderCard)}
+      </div>
+
+      {/* 左右箭头 */}
+      <div className="flex justify-center mt-4 gap-4">
+        <button onClick={handleLeft} className="rounded-full px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white">
+          ←
+        </button>
+        <button onClick={handleRight} className="rounded-full px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white">
+          →
+        </button>
+        <span className="text-sm text-gray-400 ml-4">显示第 {startIndex + 1} ~ {startIndex + visibleCards.length} 张</span>
+      </div>
+    </div>
+  );
 }

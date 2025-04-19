@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import KLineChart from "@/components/KLineChart";
 import PredictionCards from "@/components/PredictionCards";
-import CardSlider from "@/components/CardSlider";
+import CardSlider from "./components/CardSlider";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 export default function HomePage() {
@@ -67,7 +67,7 @@ export default function HomePage() {
         {/* 第二行：箭头预留位 */}
 
         {/* 第三行：卡片组件 */}
-        <PredictionCards />
+        < CardSlider />
 
         {/* 第四行：K 线图 */}
         <KLineChart className="max-w-[1200px] h-[500px]" />
