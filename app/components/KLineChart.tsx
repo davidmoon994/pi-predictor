@@ -26,19 +26,19 @@ type Props = {
   className?: string;
 };
 
-const chartOptions = {
+const chartOptions: ChartOptions<"candlestick"> & CandlestickControllerChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: { display: false },
     tooltip: {
-      mode: "index" as const,
+      mode: "index" as "index", // 直接写成字面量类型
       intersect: false,
     },
   },
   scales: {
     x: {
-      type: "time" as const,
+      type: "time",
       time: {
         unit: "minute",
         tooltipFormat: "yyyy-MM-dd HH:mm",
