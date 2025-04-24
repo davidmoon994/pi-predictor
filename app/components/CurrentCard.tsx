@@ -8,10 +8,9 @@ import { fetchLatestPiPrice } from '@/lib/klineApi';
 const handleDraw = async () => {
   const latestPrice = await fetchLatestPiPrice();
   if (latestPrice !== null) {
-    drawAndSettle(latestPrice); // 你已有的开奖处理函数
+    drawAndSettle(latestPrice, cardData, userBets); // 示例
   }
 };
-
 
 const CurrentCard = ({ period }: { period: string }) => {
   const [timeLeft, setTimeLeft] = useState(300); // 初始300秒
@@ -22,12 +21,16 @@ const CurrentCard = ({ period }: { period: string }) => {
   const [betAmount, setBetAmount] = useState('');
   const [drawTriggered, setDrawTriggered] = useState(false);
   const [latestPrice, setLatestPrice] = useState<number | null>(null);
+  const [openPrice, setOpenPrice] = useState<number | null>(null);
 
   // 获取最新的 Pi K 线数据（开盘价和收盘价）
   useEffect(() => {
     const fetchPrice = async () => {
       const price = await fetchLatestKlines();
-      if (price) setLatestPrice(price.close); // 更新最新收盘价
+      if (price) {
+        setLatestPrice(price.close); // 更新最新收盘价
+        setOpenPrice(price.open);  // 设置开盘价
+      }
     };
 
     fetchPrice();
@@ -59,11 +62,11 @@ const CurrentCard = ({ period }: { period: string }) => {
 
   // 倒计时结束时触发开奖
   useEffect(() => {
-    if (timeLeft === 0 && latestPrice && !drawTriggered) {
+    if (timeLeft === 0 && latestPrice && openPrice && !drawTriggered) {
       setDrawTriggered(true);
-      drawAndSettle(period, latestPrice);
+      drawAndSettle(period, openPrice, latestPrice);  // 传入期号、开盘价和收盘价
     }
-  }, [timeLeft, latestPrice]);
+  }, [timeLeft, latestPrice, openPrice, drawTriggered, period]);
 
   return (
     <div className="relative">
@@ -112,7 +115,7 @@ const CurrentCard = ({ period }: { period: string }) => {
           <div className="relative z-10 space-y-1">
             <div className="text-sm text-white">收盘价：<span className="text-yellow-400 font-bold">{latestPrice || '加载中...'}</span></div>
             <div className="text-sm text-white">奖池总金额：<span className="text-green-400 font-bold">666</span></div>
-            <div className="text-sm text-white">开盘价：<span className="text-blue-400 font-bold">0.5555</span></div>
+            <div className="text-sm text-white">开盘价：<span className="text-blue-400 font-bold">{openPrice || '加载中...'}</span></div>
           </div>
         </div>
 
