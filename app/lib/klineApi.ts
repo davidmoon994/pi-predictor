@@ -38,3 +38,23 @@ export async function fetchLatestPiPrice() {
     return parseFloat(data?.data?.[0]?.[2]); // 从数组中提取收盘价
   }
 
+  export const fetchKlineData = async () => {
+    try {
+      const res = await fetch('/api/kline/route');
+      const json = await res.json();
+      const data = json.data;
+  
+      if (!data || data.length === 0) {
+        throw new Error('No K-line data available');
+      }
+  
+      const lastItem = data[data.length - 1];
+      const open = parseFloat(lastItem[2]);   // 开盘价
+      const close = parseFloat(lastItem[5]);  // 收盘价
+  
+      return { open, close };
+    } catch (error) {
+      console.error('Error fetching K-line data:', error);
+      throw error;
+    }
+  };

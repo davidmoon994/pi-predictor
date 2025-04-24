@@ -3,6 +3,7 @@ import PastCard from "./PastCard";
 import CurrentCard from "./CurrentCard";
 import NextCard from "./NextCard";
 import UpcomingCard from "./UpcomingCard";
+import { fetchKlineData } from '@/lib/klineApi';
 import { fetchLatestPiPrice } from '@/lib/klineApi';
 import { drawAndSettle } from '@lib/drawService';
 
