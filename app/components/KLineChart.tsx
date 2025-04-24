@@ -1,71 +1,101 @@
 "use client";
-import React, { useEffect, useRef } from "react";
-import * as echarts from "echarts";
+import React, { useEffect, useState } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  TimeScale,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Chart } from "react-chartjs-2";
+import { CandlestickController, CandlestickElement } from "chartjs-chart-financial";
+import "chartjs-adapter-date-fns";
+import { fetchLatestKlines } from "@/lib/klineApi";
 
-// 给组件添加 props 接口，支持 className
-interface KLineChartProps {
-  className?: string; // 新增 className 属性
-}
+// 注册 Chart.js 和金融图表组件
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  TimeScale,
+  Tooltip,
+  Legend,
+  CandlestickController,
+  CandlestickElement
+);
 
-const KLineChart: React.FC<KLineChartProps> = ({ className }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
+const KLineChart = ({ className }: { className?: string }) => {
+  const [klineData, setKlineData] = useState<any[]>([]);
+
+  const fetchData = async () => {
+    const result = await fetchLatestKlines(50); // 获取最近 50 根 K 线
+    if (result && Array.isArray(result)) {
+      const formatted = result.map((item: any) => ({
+        x: new Date(item.timestamp),
+        o: parseFloat(item.open),
+        h: parseFloat(item.high),
+        l: parseFloat(item.low),
+        c: parseFloat(item.close),
+      }));
+      setKlineData(formatted);
+    }
+  };
 
   useEffect(() => {
-    const chart = echarts.init(chartRef.current!);
-
-    fetch("/api/kline")
-      .then((res) => res.json())
-      .then((data) => {
-        const xData = data.map((item: any) => item.time);
-        const kData = data.map((item: any) => [
-          item.open,
-          item.close,
-          item.low,
-          item.high,
-        ]);
-
-        chart.setOption({
-          backgroundColor: "#1E293B",
-          textStyle: {
-            color: "#CBD5E1",
-          },
-          tooltip: {
-            trigger: "axis",
-            axisPointer: {
-              type: "cross",
-            },
-          },
-          xAxis: {
-            type: "category",
-            data: xData,
-            axisLine: { lineStyle: { color: "#ccc" } },
-            axisLabel: { formatter: (val: string) => val.slice(11, 16) },
-          },
-          yAxis: {
-            scale: true,
-            axisLine: { lineStyle: { color: "#ccc" } },
-          },
-          series: [
-            {
-              type: "candlestick",
-              data: kData,
-              itemStyle: {
-                color: "#26A69A",
-                color0: "#EF5350",
-                borderColor: "#26A69A",
-                borderColor0: "#EF5350",
-              },
-            },
-          ],
-        });
-      });
-
-    return () => {
-      chart.dispose();
-    };
+    fetchData();
+    const interval = setInterval(fetchData, 60000); // 每分钟刷新
+    return () => clearInterval(interval);
   }, []);
 
-  return <div ref={chartRef} className={className} style={{ height: 400, width: "100%" }} />;
+  const chartData = {
+    datasets: [
+      {
+        label: "PI/USDT",
+        data: klineData,
+        borderColor: "#00cc99",
+        color: {
+          up: "#00ff99",
+          down: "#ff3366",
+          unchanged: "#999999",
+        },
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { mode: "index", intersect: false },
+    },
+    scales: {
+      x: {
+        type: "time" as const,
+        time: {
+          unit: "minute",
+          tooltipFormat: "yyyy-MM-dd HH:mm",
+        },
+        ticks: { color: "#666" },
+        grid: { color: "#eee" },
+      },
+      y: {
+        ticks: { color: "#666" },
+        grid: { color: "#eee" },
+      },
+    },
+  };
+
+  return (
+    <div className={className || "w-full h-[400px]"}>
+      <Chart
+        type="candlestick"
+        data={chartData}
+        options={chartOptions}
+        style={{ height: "100%", backgroundColor: "white", borderRadius: "8px" }}
+      />
+    </div>
+  );
 };
 
 export default KLineChart;

@@ -1,121 +1,148 @@
-'use client';
-import React, { useState } from 'react';
-import PastCard from './PastCard';
-import CurrentCard from './CurrentCard';
-import NextCard from './NextCard';
-import UpcomingCard from './UpcomingCard';
+import { useRef, useState, useEffect } from "react";
+import PastCard from "./PastCard";
+import CurrentCard from "./CurrentCard";
+import NextCard from "./NextCard";
+import UpcomingCard from "./UpcomingCard";
+import { getLatestPiPrice } from '@/lib/klineApi';
+import { drawAndSettle } from '@lib/drawService';
 
-interface CardData {
-  id: string;
-  type: 'past' | 'live' | 'next' | 'upcoming';
-  lockedPrice: number;
-  lastPrice: number;
-  priceChange: number;
-  prizePool: number;
-  upPayout: number;
-  downPayout: number;
-}
+const CardSlider = () => {
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [scrollIndex, setScrollIndex] = useState(0);
+  const [openPrice, setOpenPrice] = useState<number | null>(null);
+  const [closePrice, setClosePrice] = useState<number | null>(null);
+  const [periodId, setPeriodId] = useState("20250421");
+  const [timeLeft, setTimeLeft] = useState(300); // 默认300秒倒计时
+  const [latestPrice, setLatestPrice] = useState<number | null>(null);
 
-const initialCards: CardData[] = [
-  // 8 往期（7张被隐藏、通过箭头可轮动）：
-  ...Array.from({ length: 8 }, (_, i) => ({
-    id: `#${1000 - i}`,
-    type: 'past',
-    lockedPrice: 3.14,
-    lastPrice: 3.11,
-    priceChange: -0.96,
-    prizePool: 1200,
-    upPayout: 1.5,
-    downPayout: 2.1,
-  })),
-  // 当前开奖：
-  {
-    id: '#1001',
-    type: 'live',
-    lockedPrice: 3.15,
-    lastPrice: 3.17,
-    priceChange: 0.63,
-    prizePool: 1400,
-    upPayout: 1.8,
-    downPayout: 1.9,
-  },
-  // 下一期可投注：
-  {
-    id: '#1002',
-    type: 'next',
-    lockedPrice: 3.17,
-    lastPrice: 3.17,
-    priceChange: 0,
-    prizePool: 0,
-    upPayout: 2.0,
-    downPayout: 2.0,
-  },
-  // 即将开始投注：
-  {
-    id: '#1003',
-    type: 'upcoming',
-    lockedPrice: 3.17,
-    lastPrice: 3.17,
-    priceChange: 0,
-    prizePool: 0,
-    upPayout: 0,
-    downPayout: 0,
-  },
-];
+  const cardWidth = 280; // 每张卡片宽度 + 间距
+  const maxIndex = 5; // 最多显示 5 张
 
-export default function CardSlider() {
-  const [startIndex, setStartIndex] = useState(0);
+  // 每分钟自动拉取最新价格
+useEffect(() => {
+  const updatePrice = async () => {
+    const price = await fetchLatestPiPrice();
+    setLatestPrice(price);
+  };
 
-  // 最多展示 5 张（左2 + 当前 + 右1 + 右2）
-  const visibleCards = initialCards.slice(startIndex, startIndex + 5);
+  updatePrice(); // 页面首次加载
+  const interval = setInterval(updatePrice, 60000); // 每分钟更新一次
+  return () => clearInterval(interval);
+}, []);
+  
+// 左右箭头点击滚动
+  const scrollLeft = () => {
+    if (scrollIndex > 0) {
+      const newIndex = scrollIndex - 1;
+      sliderRef.current?.scrollTo({ left: newIndex * cardWidth, behavior: "smooth" });
+      setScrollIndex(newIndex);
+    }
+  };
 
-  const handleLeft = () => {
-    if (startIndex > 0) setStartIndex(startIndex - 1);
-  };
+  const scrollRight = () => {
+    if (scrollIndex < 5 - 1) {
+      const newIndex = scrollIndex + 1;
+      sliderRef.current?.scrollTo({ left: newIndex * cardWidth, behavior: "smooth" });
+      setScrollIndex(newIndex);
+    }
+  };
 
-  const handleRight = () => {
-    if (startIndex < 8) setStartIndex(startIndex + 1); // 最多滑动到第8个
-  };
+  // 获取 K 线数据并设置开盘和收盘价
+  const updateKlineData = async () => {
+    try {
+      const { open, close } = await fetchKlineData();
+      setOpenPrice(open);
+      setClosePrice(close);
+    } catch (error) {
+      console.error('Failed to update K-line data:', error);
+    }
+  };
 
-  const renderCard = (card: CardData) => {
-    const commonProps = {
-      issueId: card.id,
-      lockedPrice: card.lockedPrice,
-      lastPrice: card.lastPrice,
-      priceChange: card.priceChange,
-      prizePool: card.prizePool,
-      upPayout: card.upPayout,
-      downPayout: card.downPayout,
-    };
+  // 定时获取 K 线数据和更新时间
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateKlineData(); // 每分钟更新一次 K 线数据
+    }, 60000); // 60秒
 
-    switch (card.type) {
-      case 'past':
-        return <PastCard key={card.id} {...commonProps} />;
-      case 'live':
-        return <CurrentCard key={card.id} {...commonProps} />;
-      case 'next':
-        return <NextCard key={card.id} {...commonProps} />;
-      case 'upcoming':
-        return <UpcomingCard key={card.id} {...commonProps} />;
-    }
-  };
+    updateKlineData(); // 初始化时获取数据
 
-  return (
-    <div className="relative w-full overflow-hidden">
-      <div className="flex justify-center gap-4 px-4 transition-all duration-300">
-        {visibleCards.map(renderCard)}
-      </div>
+    return () => clearInterval(interval); // 清理定时器
+  }, []);
 
-      {/* 左右箭头 */}
-      <div className="flex justify-center mt-4 gap-4">
-        <button onClick={handleLeft} className="rounded-full px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white">
-          ←
-        </button>
-        <button onClick={handleRight} className="rounded-full px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white">
-          →
-        </button>
-        <span className="text-sm text-gray-400 ml-4">显示第 {startIndex + 1} ~ {startIndex + visibleCards.length} 张</span>
-      </div>
-    </div>
-  );
-}
+  useEffect(() => {
+    const fetchPrice = async () => {
+      const price = await getLatestPiPrice();
+      if (price) setLatestPrice(price);
+    };
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60000); // 每分钟更新一次
+    return () => clearInterval(interval);
+  }, []);
+  
+  // 倒计时逻辑
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      if (openPrice !== null && closePrice !== null) {
+        // 调用开奖处理逻辑（假设drawAndSettle已在上下文中）
+        drawAndSettle(periodId, openPrice, closePrice);
+      }
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, openPrice, closePrice]);
+
+  return (
+    <div className="relative w-full">
+      {/* 顶部箭头导航 */}
+      <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-8 z-20">
+        <button
+          onClick={scrollLeft}
+          className="w-10 h-10 rounded-full border-2 border-white text-white font-bold text-xl shadow-md hover:scale-105 transition transform duration-300 bg-black/40"
+        >
+          ‹
+        </button>
+        <button
+          onClick={scrollRight}
+          className="w-10 h-10 rounded-full border-2 border-white text-white font-bold text-xl shadow-md hover:scale-105 transition transform duration-300 bg-black/40"
+        >
+          ›
+        </button>
+      </div>
+
+      {/* 卡片滑动区域 */}
+      <div
+        ref={sliderRef}
+        className="w-full overflow-x-auto whitespace-nowrap flex items-start gap-4 px-4 pb-2 scroll-smooth"
+        style={{ scrollBehavior: "smooth" }}
+      >
+        {/* Past Cards (最多2张) */}
+        {["20250419", "20250420"].map((period) => (
+          <div key={period} className="inline-block w-[260px] shrink-0">
+            <PastCard period={period} />
+          </div>
+        ))}
+
+        {/* Current Card */}
+        <div className="inline-block w-[260px] shrink-0">
+          <CurrentCard period={periodId} />
+        </div>
+
+        {/* Next Card */}
+        <div className="inline-block w-[260px] shrink-0">
+          <NextCard period={(+periodId + 1).toString()} />
+        </div>
+
+        {/* Upcoming Card */}
+        <div className="inline-block w-[260px] shrink-0">
+          <UpcomingCard period={(+periodId + 2).toString()} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CardSlider;

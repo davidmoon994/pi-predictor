@@ -1,100 +1,62 @@
 "use client";
-import React, { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { auth, db } from "@lib/firebase"; // 确保你有这个文件
+import React, { useState, useEffect } from "react";
+import { auth, db } from "@lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { useRouter, useSearchParams } from "next/navigation";
+import { nanoid } from "nanoid";
 
-// RegisterPageWrapper 组件，用于包裹 RegisterPage
-export default function RegisterPageWrapper() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <RegisterPage />
-    </Suspense>
-  );
-}
-
-function RegisterPage() {
-  const searchParams = useSearchParams();
-  const [referrer, setReferrer] = useState<string | null>(null);
+export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const invitedBy = searchParams.get("ref");
 
-  // 客户端渲染时获取查询参数
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // 只有在浏览器环境中才使用 useSearchParams
-      const searchParams = new URLSearchParams(window.location.search);
-      const ref = searchParams.get("ref");
-      if (ref) setReferrer(ref);
-    }
-  }, []); // 空依赖数组，确保只在客户端加载时执行一次
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const handleRegister = async () => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
+      const user = userCredential.user;
 
-      // 生成邀请码（也可以直接用 uid）
-      const myInviteCode = uid.slice(0, 6).toUpperCase();
+      // 生成唯一邀请码
+      const inviteCode = nanoid(6).toUpperCase();
 
-      await setDoc(doc(db, "users", uid), {
-        uid,
-        email,
-        inviteCode: myInviteCode,
-        invitedBy: referrer || null,
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        uid: user.uid,
+        inviteCode,
+        invitedBy: invitedBy || null,
         createdAt: new Date(),
       });
 
-      alert("注册成功！");
-      // 可跳转到首页或用户中心页面
-    } catch (error: any) {
-      console.error("注册失败", error);
-      alert(error.message);
-    } finally {
-      setLoading(false);
+      router.push("/user");
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
-      <form onSubmit={handleRegister} className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-4">注册账号</h1>
-
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="邮箱"
-          required
-          className="w-full p-2 mb-3 bg-gray-700 rounded"
-        />
-
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="密码"
-          required
-          className="w-full p-2 mb-3 bg-gray-700 rounded"
-        />
-
-        {referrer && (
-          <p className="text-sm text-green-400 mb-2">邀请人：{referrer}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 py-2 rounded hover:bg-blue-700 transition"
-        >
-          {loading ? "注册中..." : "立即注册"}
-        </button>
-      </form>
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      <h1 className="text-2xl font-bold mb-4">注册账号</h1>
+      {error && <p className="text-red-500 mb-2">{error}</p>}
+      <input
+        type="email"
+        placeholder="邮箱"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="block mb-3 px-4 py-2 rounded bg-gray-800 w-full"
+      />
+      <input
+        type="password"
+        placeholder="密码"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="block mb-3 px-4 py-2 rounded bg-gray-800 w-full"
+      />
+      <button onClick={handleRegister} className="bg-blue-600 px-6 py-2 rounded hover:bg-blue-700">
+        注册
+      </button>
     </div>
   );
 }
