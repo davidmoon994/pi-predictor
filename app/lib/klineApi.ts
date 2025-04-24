@@ -33,7 +33,7 @@ export async function fetchLatestKlines(limit = 50) {
 
 // 获取最新价格（收盘价）
 export async function fetchLatestPiPrice() {
-    const res = await fetch('/api/kline');
+    const res = await fetch('/api/kline/route');
     const data = await res.json();
     return parseFloat(data?.data?.[0]?.[2]); // 从数组中提取收盘价
   }

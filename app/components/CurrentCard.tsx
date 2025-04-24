@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import { placeBet } from "@/lib/betService";
 import { drawAndSettle } from "@/lib/drawService";
 import { fetchLatestKlines } from "@/lib/klineApi"; // 引入 K 线 API
-import { getLatestPiPrice } from '@/lib/klineApi';
+import { fetchLatestPiPrice } from '@/lib/klineApi';
 
 const handleDraw = async () => {
-  const latestPrice = await getLatestPiPrice();
+  const latestPrice = await fetchLatestPiPrice();
   if (latestPrice !== null) {
     drawAndSettle(latestPrice); // 你已有的开奖处理函数
   }
