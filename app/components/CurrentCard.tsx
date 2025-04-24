@@ -5,13 +5,6 @@ import { drawAndSettle } from "@/lib/drawService";
 import { fetchLatestKlines } from "@/lib/klineApi"; // 引入 K 线 API
 import { fetchLatestPiPrice } from '@/lib/klineApi';
 
-const handleDraw = async () => {
-  const latestPrice = await fetchLatestPiPrice();
-  if (latestPrice !== null) {
-    drawAndSettle(latestPrice, cardData, userBets); // 示例
-  }
-};
-
 const CurrentCard = ({ period }: { period: string }) => {
   const [timeLeft, setTimeLeft] = useState(300); // 初始300秒
   const [selection, setSelection] = useState<'up' | 'down' | null>(null);
