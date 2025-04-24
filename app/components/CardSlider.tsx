@@ -72,7 +72,7 @@ useEffect(() => {
 
   useEffect(() => {
     const fetchPrice = async () => {
-      const price = await getLatestPiPrice();
+      const price = await fetchLatestPiPrice();
       if (price) setLatestPrice(price);
     };
     fetchPrice();
