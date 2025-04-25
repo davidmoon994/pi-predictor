@@ -1,4 +1,4 @@
-import { db, auth } from "./firebase";
+import { db } from "./firebase";
 import {
   collection,
   addDoc,
@@ -9,7 +9,40 @@ import {
   query,
   where,
   increment,
+  arrayUnion,
 } from "firebase/firestore";
+
+// 下单下注并写入记录 & 扣除积分
+export async function placeBet(
+  userId: string,
+  period: string,
+  direction: "up" | "down",
+  amount: number,
+  invitedBy?: string
+) {
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data();
+
+  if (!userSnap.exists() || userData.points < amount) {
+    throw new Error("用户不存在或积分不足");
+  }
+
+  // 先扣除用户积分
+  await updateDoc(userRef, {
+    points: userData.points - amount,
+  });
+
+  // 然后添加下注记录
+  await addDoc(collection(db, "bets"), {
+    userId,
+    periodId: period,
+    direction,
+    amount,
+    timestamp: Date.now(),
+    invitedBy: invitedBy || userData.invitedBy || null,
+  });
+}
 
 // 获取某一期的全部下注记录
 export const getCurrentPeriodBets = async (periodId: string) => {
@@ -23,7 +56,6 @@ export const settleBetsForPeriod = async (periodId: string) => {
   const bets = await getCurrentPeriodBets(periodId);
   if (bets.length === 0) throw new Error("本期无投注记录");
 
-  // 简单规则：随机选中 “up” 或 “down” 为赢家
   const result = Math.random() < 0.5 ? "up" : "down";
 
   const totalPool = bets.reduce((sum, b) => sum + b.amount, 0);
@@ -36,7 +68,7 @@ export const settleBetsForPeriod = async (periodId: string) => {
   for (const bet of bets) {
     const userRef = doc(db, "users", bet.userId);
 
-    // 分润处理（不管输赢都执行）
+    // 分润处理
     const refReward1 = Math.floor(bet.amount * 0.02);
     const refReward2 = Math.floor(bet.amount * 0.01);
 
@@ -49,7 +81,6 @@ export const settleBetsForPeriod = async (periodId: string) => {
           points: increment(refReward1),
         });
 
-        // 获取上上级
         const ref1Data = ref1Doc.data();
         if (ref1Data.invitedBy) {
           const ref2Query = query(collection(db, "users"), where("inviteCode", "==", ref1Data.invitedBy));
@@ -64,7 +95,7 @@ export const settleBetsForPeriod = async (periodId: string) => {
       }
     }
 
-    // 赢家收益发放
+    // 赢家收益分配
     if (bet.direction === result) {
       const reward = Math.floor((bet.amount / totalWinnerStake) * distributable);
       await updateDoc(userRef, {
@@ -72,17 +103,29 @@ export const settleBetsForPeriod = async (periodId: string) => {
       });
     }
   }
-    // 获取指定期号的开奖结果
-     export const getResultForPeriod = async (periodId: string) => {
+
+  // 可选：保存开奖结果到 Firestore
+  await addDoc(collection(db, "results"), {
+    periodId,
+    result,
+    timestamp: Date.now(),
+  });
+
+  return result;
+};
+
+// 获取指定期号的开奖结果
+export const getResultForPeriod = async (periodId: string) => {
   const q = query(collection(db, "results"), where("periodId", "==", periodId));
   const snapshot = await getDocs(q);
   if (!snapshot.empty) {
     return snapshot.docs[0].data(); // 只取第一个结果
   }
-  
+  return null;
+};
 
-     // 获取所有开奖结果，按 periodId 映射
-    export const getAllResults = async () => {
+// 获取所有开奖结果
+export const getAllResults = async () => {
   const snapshot = await getDocs(collection(db, "results"));
   const results: Record<string, string> = {};
   snapshot.forEach((doc) => {
@@ -92,5 +135,5 @@ export const settleBetsForPeriod = async (periodId: string) => {
     }
   });
 
-  return result;
+  return results;
 };
