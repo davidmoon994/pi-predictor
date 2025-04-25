@@ -1,113 +1,82 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  TimeScale,
-  Tooltip,
-} from 'chart.js';
-import { Chart } from 'react-chartjs-2';
+import { useEffect, useState } from 'react';
+import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement, Tooltip } from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
-import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
-import { fetchLatestKlines } from '@/lib/klineApi';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  TimeScale,
-  Tooltip,
-  CandlestickController,
-  CandlestickElement
-);
+ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip);
 
-type FormattedData = {
-  x: Date;
-  o: number;
-  h: number;
-  l: number;
-  c: number;
-};
+interface KlineItem {
+  timestamp: number;
+  close: string;
+}
 
-const KLineChart = () => {
-  const [chartData, setChartData] = useState({
-    labels: [] as Date[],
-    datasets: [
-      {
-        label: 'PI/USDT',
-        data: [] as FormattedData[],
-        borderColor: '#00cc99',
-        backgroundColor: '#00cc99',
-      },
-    ],
-  });
-
-  const fetchData = async () => {
-    const result = await fetchLatestKlines();
-    if (result && result.length > 0) {
-      const formattedData: FormattedData[] = result.map((item: any) => ({
-        x: new Date(item.timestamp),
-        o: parseFloat(item.open),
-        h: parseFloat(item.high),
-        l: parseFloat(item.low),
-        c: parseFloat(item.close),
-      }));
-
-      setChartData({
-        labels: formattedData.map((data: FormattedData) => data.x),
-        datasets: [
-          {
-            label: 'PI/USDT',
-            data: formattedData,
-            borderColor: '#00cc99',
-            backgroundColor: '#00cc99',
-          },
-        ],
-      });
-    }
-  };
+export default function KLineChart() {
+  const [chartData, setChartData] = useState<any>(null);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/kline/route');
+        const json = await res.json();
+
+        const formattedData: KlineItem[] = json.data.map((item: any[]) => ({
+          timestamp: item[0] * 1000, // 毫秒时间戳
+          close: item[5],
+        }));
+
+        setChartData({
+          labels: formattedData.map((d) => new Date(d.timestamp)),
+          datasets: [
+            {
+              label: 'PI/USDT',
+              data: formattedData.map((d) => parseFloat(d.close)),
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              tension: 0.4,
+              fill: true,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error('图表数据获取失败:', error);
+      }
+    };
+
     fetchData();
-    const interval = setInterval(fetchData, 60000);
+    const interval = setInterval(fetchData, 60 * 1000); // 每分钟刷新一次
     return () => clearInterval(interval);
   }, []);
 
+  if (!chartData) {
+    return <div>加载中...</div>;
+  }
+
   return (
-    <div className="w-full h-[400px]">
-      <Chart
-        type="candlestick"
+    <div className="bg-white p-4 rounded shadow w-full max-w-3xl mx-auto">
+      <h2 className="text-xl font-bold mb-2">Pi 币五分钟 K 线图</h2>
+      <Line
         data={chartData}
         options={{
           responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-            },
-          },
           scales: {
             x: {
               type: 'time',
               time: {
                 unit: 'minute',
-                tooltipFormat: 'yyyy-MM-dd HH:mm',
               },
-              ticks: { color: '#666' },
-              grid: { color: '#eee' },
+              ticks: {
+                maxTicksLimit: 10,
+              },
             },
             y: {
-              ticks: { color: '#666' },
-              grid: { color: '#eee' },
+              beginAtZero: false,
             },
           },
         }}
       />
     </div>
   );
-};
+}
 
-export default KLineChart;
