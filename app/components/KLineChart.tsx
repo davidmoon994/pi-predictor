@@ -26,13 +26,13 @@ type Props = {
   className?: string;
 };
 
-const chartOptions: ChartOptions<"candlestick"> & CandlestickControllerChartOptions = {
+const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: { display: false },
     tooltip: {
-      mode: "index" as "index", // 直接写成字面量类型
+      mode: "index", // 修复这里，直接使用 "index" 字面量类型
       intersect: false,
     },
   },

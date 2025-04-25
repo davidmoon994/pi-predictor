@@ -55,8 +55,8 @@ export default function HomePage() {
           </button>
           <div className="flex items-center space-x-4">
             <select className="bg-gray-700 text-white px-3 py-2 rounded">
-              <option value="pi">Pi</option>
-              <option value="btc">BTC</option>
+              <option value="pi">Pi/USDT</option>
+              <option value="btc">BTC/USDT</option>
             </select>
             <span className="text-green-400 font-semibold">
               实时价格：${price}
