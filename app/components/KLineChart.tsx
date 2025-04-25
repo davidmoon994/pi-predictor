@@ -32,7 +32,7 @@ const chartOptions = {
   plugins: {
     legend: { display: false },
     tooltip: {
-      mode: "index", // 修复这里，直接使用 "index" 字面量类型
+      mode: "index",
       intersect: false,
     },
   },
@@ -56,12 +56,14 @@ const chartOptions = {
 const KLineChart = ({ className }: Props) => {
   const [chartData, setChartData] = useState<any>({
     labels: [],
-    datasets: [{
-      label: "PI/USDT",
-      data: [],
-      borderColor: "#00cc99",
-      backgroundColor: "#00cc99",
-    }],
+    datasets: [
+      {
+        label: "PI/USDT",
+        data: [],
+        borderColor: "#00cc99",
+        backgroundColor: "#00cc99",
+      },
+    ],
   });
 
   const fetchData = async () => {
@@ -78,12 +80,14 @@ const KLineChart = ({ className }: Props) => {
       // 更新 chartData
       setChartData({
         labels: formattedData.map((data) => data.x), // 时间戳作为标签
-        datasets: [{
-          label: "PI/USDT",
-          data: formattedData,
-          borderColor: "#00cc99",
-          backgroundColor: "#00cc99",
-        }],
+        datasets: [
+          {
+            label: "PI/USDT",
+            data: formattedData,
+            borderColor: "#00cc99",
+            backgroundColor: "#00cc99",
+          },
+        ],
       });
     }
   };
