@@ -3,8 +3,8 @@ import PastCard from "./PastCard";
 import CurrentCard from "./CurrentCard";
 import NextCard from "./NextCard";
 import UpcomingCard from "./UpcomingCard";
-import { fetchKlineData } from '@/lib/klineApi';
-import { fetchLatestPiPrice } from '@/lib/klineApi';
+import { fetchKlineData } from '@lib/klineApi';
+import { fetchLatestPiPrice } from '@lib/klineApi';
 import { drawAndSettle } from '@lib/drawService';
 
 const CardSlider = () => {
@@ -13,13 +13,13 @@ const CardSlider = () => {
   const [openPrice, setOpenPrice] = useState<number | null>(null);
   const [closePrice, setClosePrice] = useState<number | null>(null);
   const [periodId, setPeriodId] = useState("20250421");
-  const [timeLeft, setTimeLeft] = useState(300); // 默认300秒倒计时
+  const [timeLeft, setTimeLeft] = useState(300); // 默认300秒倒计�?
   const [latestPrice, setLatestPrice] = useState<number | null>(null);
 
   const cardWidth = 280; // 每张卡片宽度 + 间距
-  const maxIndex = 5; // 最多显示 5 张
+  const maxIndex = 5; // 最多显�?5 �?
 
-  // 每分钟自动拉取最新价格
+  // 每分钟自动拉取最新价�?
 useEffect(() => {
   const updatePrice = async () => {
     const price = await fetchLatestPiPrice();
@@ -27,7 +27,7 @@ useEffect(() => {
   };
 
   updatePrice(); // 页面首次加载
-  const interval = setInterval(updatePrice, 60000); // 每分钟更新一次
+  const interval = setInterval(updatePrice, 60000); // 每分钟更新一�?
   return () => clearInterval(interval);
 }, []);
   
@@ -48,7 +48,7 @@ useEffect(() => {
     }
   };
 
-  // 获取 K 线数据并设置开盘和收盘价
+  // 获取 K 线数据并设置开盘和收盘�?
   const updateKlineData = async () => {
     try {
       const { open, close } = await fetchKlineData();
@@ -62,12 +62,12 @@ useEffect(() => {
   // 定时获取 K 线数据和更新时间
   useEffect(() => {
     const interval = setInterval(() => {
-      updateKlineData(); // 每分钟更新一次 K 线数据
-    }, 60000); // 60秒
+      updateKlineData(); // 每分钟更新一�?K 线数�?
+    }, 60000); // 60�?
 
     updateKlineData(); // 初始化时获取数据
 
-    return () => clearInterval(interval); // 清理定时器
+    return () => clearInterval(interval); // 清理定时�?
   }, []);
 
   useEffect(() => {
@@ -76,7 +76,7 @@ useEffect(() => {
       if (price) setLatestPrice(price);
     };
     fetchPrice();
-    const interval = setInterval(fetchPrice, 60000); // 每分钟更新一次
+    const interval = setInterval(fetchPrice, 60000); // 每分钟更新一�?
     return () => clearInterval(interval);
   }, []);
   
@@ -84,7 +84,7 @@ useEffect(() => {
   useEffect(() => {
     if (timeLeft <= 0) {
       if (openPrice !== null && closePrice !== null) {
-        // 调用开奖处理逻辑（假设drawAndSettle已在上下文中）
+        // 调用开奖处理逻辑（假设drawAndSettle已在上下文中�?
         drawAndSettle(periodId, openPrice, closePrice);
       }
     }
@@ -104,13 +104,13 @@ useEffect(() => {
           onClick={scrollLeft}
           className="w-10 h-10 rounded-full border-2 border-white text-white font-bold text-xl shadow-md hover:scale-105 transition transform duration-300 bg-black/40"
         >
-          ‹
+          �?
         </button>
         <button
           onClick={scrollRight}
           className="w-10 h-10 rounded-full border-2 border-white text-white font-bold text-xl shadow-md hover:scale-105 transition transform duration-300 bg-black/40"
         >
-          ›
+          �?
         </button>
       </div>
 
@@ -120,7 +120,7 @@ useEffect(() => {
         className="w-full overflow-x-auto whitespace-nowrap flex items-start gap-4 px-4 pb-2 scroll-smooth"
         style={{ scrollBehavior: "smooth" }}
       >
-        {/* Past Cards (最多2张) */}
+        {/* Past Cards (最�?�? */}
         {["20250419", "20250420"].map((period) => (
           <div key={period} className="inline-block w-[260px] shrink-0">
             <PastCard period={period} />

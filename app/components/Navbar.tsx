@@ -17,7 +17,7 @@ export default function Navbar() {
   return (
     <nav className="bg-gray-900 text-white p-4 shadow-lg flex justify-between items-center">
       <Link href="/" className="text-xl font-bold text-yellow-400 hover:text-yellow-300 transition duration-300">
-        Pi币值预测有奖竞猜
+        Pi币值预测有奖竞�?
       </Link>
 
       <div className="space-x-4">
@@ -43,7 +43,7 @@ export default function Navbar() {
               onClick={handleLogout}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded transition duration-300"
             >
-              退出
+              退�?
             </button>
           </>
         )}

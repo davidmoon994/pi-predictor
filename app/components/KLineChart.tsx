@@ -22,7 +22,7 @@ export default function KLineChart() {
         const json = await res.json();
 
         const formattedData: KlineItem[] = json.data.map((item: any[]) => ({
-          timestamp: item[0] * 1000, // 毫秒时间戳
+          timestamp: item[0] * 1000, // 毫秒时间�?
           close: item[5],
         }));
 
@@ -45,12 +45,12 @@ export default function KLineChart() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 60 * 1000); // 每分钟刷新一次
+    const interval = setInterval(fetchData, 60 * 1000); // 每分钟刷新一�?
     return () => clearInterval(interval);
   }, []);
 
   if (!chartData) {
-    return <div>加载中...</div>;
+    return <div>加载�?..</div>;
   }
 
   return (

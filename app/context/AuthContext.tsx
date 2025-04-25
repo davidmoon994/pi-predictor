@@ -12,7 +12,7 @@ interface UserInfo {
   email: string;
 }
 
-// 定义上下文类型
+// 定义上下文类�?
 interface AuthContextType {
   user: UserInfo | null;
   login: (email: string, password: string) => Promise<void>;
@@ -20,7 +20,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-// 创建上下文
+// 创建上下�?
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => {},
@@ -72,5 +72,5 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// 自定义 Hook，方便使用上下文
+// 自定�?Hook，方便使用上下文
 export const useAuth = () => useContext(AuthContext);

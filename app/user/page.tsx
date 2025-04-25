@@ -34,7 +34,7 @@ export default function UserCenterPage() {
           const data = snap.data();
           setUserData(data);
 
-          // 获取一级邀请用户
+          // 获取一级邀请用�?
           const q = query(collection(db, "users"), where("invitedBy", "==", data.inviteCode));
           const res = await getDocs(q);
           const list: any[] = [];
@@ -52,7 +52,7 @@ export default function UserCenterPage() {
   }, []);
 
   const handleTransaction = async (type: "recharge" | "withdraw") => {
-    if (!amount || isNaN(Number(amount))) return alert("请输入有效金额");
+    if (!amount || isNaN(Number(amount))) return alert("请输入有效金�?);
     const user = auth.currentUser;
     if (!user) return;
 
@@ -68,7 +68,7 @@ export default function UserCenterPage() {
     window.location.reload();
   };
 
-  if (loading) return <div className="text-white p-6">加载中...</div>;
+  if (loading) return <div className="text-white p-6">加载�?..</div>;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -87,7 +87,7 @@ export default function UserCenterPage() {
               />
               <div>
                 <p className="font-semibold">等级：Lv.{userData.level || 1}</p>
-                <p>账户余额：<span className="text-green-400">{userData.points || 0} Pi</span></p>
+                <p>账户余额�?span className="text-green-400">{userData.points || 0} Pi</span></p>
               </div>
             </div>
 
@@ -96,7 +96,7 @@ export default function UserCenterPage() {
                 onClick={() => setShowRecharge(true)}
                 className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded"
               >
-                充值
+                充�?
               </button>
               <button
                 onClick={() => setShowWithdraw(true)}
@@ -109,7 +109,7 @@ export default function UserCenterPage() {
 
           {/* 邀请码信息 */}
           <div className="mb-6">
-            <p>我的邀请码：</p>
+            <p>我的邀请码�?/p>
             <div className="bg-gray-800 p-2 rounded text-green-400 text-lg">
               {userData.inviteCode}
             </div>
@@ -117,7 +117,7 @@ export default function UserCenterPage() {
 
           {/* 下级用户 */}
           <div>
-            <h2 className="text-xl font-semibold mb-2">我的下级用户：</h2>
+            <h2 className="text-xl font-semibold mb-2">我的下级用户�?/h2>
             {referrals.length > 0 ? (
               <ul className="space-y-2">
                 {referrals.map((user) => (
@@ -135,16 +135,16 @@ export default function UserCenterPage() {
         <p>无法获取用户信息</p>
       )}
 
-      {/* 弹窗：充值 / 提现 */}
+      {/* 弹窗：充�?/ 提现 */}
       {(showRecharge || showWithdraw) && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-30">
           <div className="bg-white text-black rounded-lg p-6 w-[90%] max-w-md shadow-xl">
             <h2 className="text-xl font-bold mb-4">
-              {showRecharge ? "充值 Pi 积分" : "申请提现"}
+              {showRecharge ? "充�?Pi 积分" : "申请提现"}
             </h2>
             <input
               type="number"
-              placeholder="请输入金额"
+              placeholder="请输入金�?
               className="w-full border p-2 rounded mb-4"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}

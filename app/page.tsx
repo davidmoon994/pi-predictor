@@ -35,7 +35,7 @@ export default function HomePage() {
             setPrice(formattedData[formattedData.length - 1].close.toFixed(4));
           }
         } catch (err) {
-          console.error("获取K线数据失败:", err);
+          console.error("获取K线数据失�?", err);
         }
       };
     
@@ -59,12 +59,12 @@ export default function HomePage() {
               <option value="btc">BTC/USDT</option>
             </select>
             <span className="text-green-400 font-semibold">
-              实时价格：${price}
+              实时价格�?{price}
             </span>
           </div>
         </div>
 
-        {/* 第二行：箭头预留位 */}
+        {/* 第二行：箭头预留�?*/}
 
         {/* 第三行：卡片组件 */}
         < CardSlider />
@@ -73,7 +73,7 @@ export default function HomePage() {
 
           <KLineChart />
 
-        {/* 第五行：底部菜单栏 */}
+        {/* 第五行：底部菜单�?*/}
         <div className="w-full flex justify-center gap-6 bg-gray-800 py-3 rounded-xl shadow">
           <button className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white">
             Pi NFT

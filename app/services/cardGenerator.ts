@@ -3,7 +3,7 @@
 export interface CardData {
     issueId: string;
     type: 'past' | 'current' | 'next' | 'upcoming';
-    result?: '涨' | '跌';
+    result?: '�? | '�?;
     price: number;
     upOdds: number;
     downOdds: number;
@@ -34,14 +34,14 @@ export interface CardData {
     return new Date(startOfDay.getTime() + round * 5 * 60000);
   };
   
-  // 模拟生成 13 张卡片
+  // 模拟生成 13 张卡�?
   export const generateCards = (): CardData[] => {
     return [
-      // 8 张往期卡片
+      // 8 张往期卡�?
       ...Array.from({ length: 8 }).map((_, i) => ({
         issueId: generateIssueId(-10 + i),
         type: 'past',
-        result: Math.random() > 0.5 ? '涨' : '跌',
+        result: Math.random() > 0.5 ? '�? : '�?,
         price: 3.1415 + Math.random() * 0.05,
         upOdds: 1.8,
         downOdds: 2.2,
@@ -53,7 +53,7 @@ export interface CardData {
       {
         issueId: generateIssueId(-2),
         type: 'past',
-        result: Math.random() > 0.5 ? '涨' : '跌',
+        result: Math.random() > 0.5 ? '�? : '�?,
         price: 3.15,
         upOdds: 1.9,
         downOdds: 2.1,
@@ -65,7 +65,7 @@ export interface CardData {
       {
         issueId: generateIssueId(-1),
         type: 'past',
-        result: Math.random() > 0.5 ? '涨' : '跌',
+        result: Math.random() > 0.5 ? '�? : '�?,
         price: 3.16,
         upOdds: 2.0,
         downOdds: 1.8,
@@ -73,7 +73,7 @@ export interface CardData {
         lockedPrice: 3.14,
         prizePool: 110,
       },
-      // 当前开奖卡片
+      // 当前开奖卡�?
       {
         issueId: generateIssueId(0),
         type: 'current',
@@ -95,7 +95,7 @@ export interface CardData {
         lockedPrice: 3.18,
         prizePool: 90,
       },
-      // 即将开放投注卡片
+      // 即将开放投注卡�?
       {
         issueId: generateIssueId(2),
         type: 'upcoming',

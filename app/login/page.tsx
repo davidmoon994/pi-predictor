@@ -9,7 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null); // <--- 关键在这里
+  const [error, setError] = useState<string | null>(null); // <--- 关键在这�?
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +17,7 @@ export default function LoginPage() {
       await login(email, password);
       router.push("/"); // 登录成功后跳转回首页
     } catch (err: any) {
-      setError("登录失败：" + err.message);
+      setError("登录失败�? + err.message);
     }
   };
 

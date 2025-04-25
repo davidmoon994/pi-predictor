@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 
 export const metadata = {
   title: "Pi 大陆",
-  description: "预测 Pi 币涨跌",
+  description: "预测 Pi 币涨�?,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

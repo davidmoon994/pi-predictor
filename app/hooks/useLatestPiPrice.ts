@@ -1,6 +1,6 @@
 // app/hooks/useLatestPiPrice.ts
 import { useEffect, useState } from "react";
-import { fetchLatestKline } from "@/lib/KlineApi";
+import { fetchLatestKline } from "@lib/KlineApi";
 
 export function useLatestPiPrice(intervalMs = 60000) {
   const [price, setPrice] = useState<number | null>(null);
@@ -13,10 +13,10 @@ export function useLatestPiPrice(intervalMs = 60000) {
       }
     }
 
-    fetchPrice(); // 初始化立即加载一次
-    const timer = setInterval(fetchPrice, intervalMs); // 每 intervalMs 毫秒请求一次
+    fetchPrice(); // 初始化立即加载一�?
+    const timer = setInterval(fetchPrice, intervalMs); // �?intervalMs 毫秒请求一�?
 
-    return () => clearInterval(timer); // 清除定时器
+    return () => clearInterval(timer); // 清除定时�?
   }, [intervalMs]);
 
   return price;

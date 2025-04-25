@@ -35,11 +35,11 @@ export default function InvitePage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-2xl font-bold mb-6">邀请好友</h1>
+      <h1 className="text-2xl font-bold mb-6">邀请好�?/h1>
 
       {inviteCode ? (
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-center">
-          <p className="text-lg mb-4">你的专属邀请链接</p >
+          <p className="text-lg mb-4">你的专属邀请链�?/p >
           <input
             type="text"
             readOnly
@@ -50,18 +50,18 @@ export default function InvitePage() {
             onClick={() => navigator.clipboard.writeText(inviteUrl)}
             className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
           >
-            复制邀请链接
+            复制邀请链�?
           </button>
 
           <div className="mt-6">
             <p className="mb-2">邀请二维码</p >
             <div className="inline-block bg-white p-2 rounded">
-              < img src={qrCodeUrl} alt="二维码" width={200} height={200} />
+              < img src={qrCodeUrl} alt="二维�? width={200} height={200} />
             </div>
           </div>
         </div>
       ) : (
-        <p className="text-red-400">无法获取邀请码，请检查是否已登录或已注册成功。</p >
+        <p className="text-red-400">无法获取邀请码，请检查是否已登录或已注册成功�?/p >
       )}
     </div>
   );

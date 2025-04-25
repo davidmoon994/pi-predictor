@@ -6,11 +6,11 @@ export async function GET() {
 
   try {
     const res = await fetch(url, {
-      // 可以加 headers 或其他代理设置
+      // 可以�?headers 或其他代理设�?
       headers: {
         'Content-Type': 'application/json',
       },
-      cache: 'no-store', // 禁止缓存，始终拿最新数据
+      cache: 'no-store', // 禁止缓存，始终拿最新数�?
     });
 
     if (!res.ok) {

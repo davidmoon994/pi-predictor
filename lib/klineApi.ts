@@ -8,7 +8,7 @@ export interface KlineData {
   open: string;
 }
 
-// 获取最近 1 条（用于开奖）
+// 获取最�?1 条（用于开奖）
 export async function fetchLatestKlines(limit = 50) {
     try {
       const res = await fetch(`/api/kline`);
@@ -25,7 +25,7 @@ export async function fetchLatestKlines(limit = 50) {
         return [];
       }
     } catch (err) {
-      console.error("获取 K 线失败", err);
+      console.error("获取 K 线失�?, err);
       return [];
     }
   }
@@ -35,7 +35,7 @@ export async function fetchLatestKlines(limit = 50) {
 export async function fetchLatestPiPrice() {
     const res = await fetch('/api/kline/route');
     const data = await res.json();
-    return parseFloat(data?.data?.[0]?.[2]); // 从数组中提取收盘价
+    return parseFloat(data?.data?.[0]?.[2]); // 从数组中提取收盘�?
   }
 
   export const fetchKlineData = async () => {
@@ -50,7 +50,7 @@ export async function fetchLatestPiPrice() {
   
       const lastItem = data[data.length - 1];
       const open = parseFloat(lastItem[2]);   // 开盘价
-      const close = parseFloat(lastItem[5]);  // 收盘价
+      const close = parseFloat(lastItem[5]);  // 收盘�?
   
       return { open, close };
     } catch (error) {

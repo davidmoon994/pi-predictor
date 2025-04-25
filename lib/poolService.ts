@@ -1,7 +1,7 @@
 import { db } from "./firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
-// 奖池结构存储在 pools/{periodId} 中
+// 奖池结构存储�?pools/{periodId} �?
 export const updatePoolAfterBet = async (
   periodId: string,
   amount: number,
@@ -11,7 +11,7 @@ export const updatePoolAfterBet = async (
   const poolSnap = await getDoc(poolRef);
 
   if (!poolSnap.exists()) {
-    // 第一次下注，初始化奖池
+    // 第一次下注，初始化奖�?
     await setDoc(poolRef, {
       periodId,
       total: amount,
@@ -38,19 +38,19 @@ export const resolvePool = async (
 ) => {
   const poolRef = doc(db, "pools", periodId);
   const poolSnap = await getDoc(poolRef);
-  if (!poolSnap.exists()) throw new Error("奖池不存在");
+  if (!poolSnap.exists()) throw new Error("奖池不存�?);
 
   const pool = poolSnap.data();
-  if (pool.resolved) throw new Error("已结算");
+  if (pool.resolved) throw new Error("已结�?);
 
   const totalPool = pool.total;
-  const destroyAmount = totalPool * 0.06; // 销毁6%
+  const destroyAmount = totalPool * 0.06; // 销�?%
   const remaining = totalPool - destroyAmount;
 
   const winTotal =
     winningDirection === "up" ? pool.upTotal : pool.downTotal;
 
-  // 获取所有中奖下注记录
+  // 获取所有中奖下注记�?
   const winners = (pool.bets || []).filter(
     (bet) => bet.direction === winningDirection
   );
@@ -70,7 +70,7 @@ export const resolvePool = async (
     }
   }
 
-  // 更新奖池为已结算状态
+  // 更新奖池为已结算状�?
   await updateDoc(poolRef, {
     resolved: true,
     winningDirection,

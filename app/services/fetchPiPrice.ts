@@ -7,7 +7,7 @@ export const fetchPiPrice = async (): Promise<number | null> => {
       const data = await res.json();
       return data['pi-network']?.usd || null;
     } catch (err) {
-      console.error('获取 Pi 币价格失败:', err);
+      console.error('获取 Pi 币价格失�?', err);
       return null;
     }
   };

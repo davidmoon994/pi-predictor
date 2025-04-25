@@ -11,10 +11,10 @@ const firebaseConfig = {
   appId: "1:343913166257:web:0b05ec875561580cb83990"
 };
 
-// 初始化 Firebase
+// 初始�?Firebase
 const app = initializeApp(firebaseConfig);
 
-// 初始化服务
+// 初始化服�?
 const auth = getAuth(app);
 const db = getFirestore(app);
 
