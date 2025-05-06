@@ -1,23 +1,35 @@
-// app/hooks/useLatestPiPrice.ts
-import { useEffect, useState } from "react";
-import { fetchLatestKlines } from "@lib/klineApi";
+'use client';
 
-export function useLatestPiPrice(intervalMs = 60000) {
+import { useEffect, useState } from 'react';
+
+export default function useLatestPiPrice() {
   const [price, setPrice] = useState<number | null>(null);
 
   useEffect(() => {
     async function fetchPrice() {
-      const data = await fetchLatestKlines();
-      if (data) {
-        setPrice(parseFloat(data.close));
+      try {
+        const res = await fetch('/api/kline');
+        if (!res.ok) throw new Error('无法获取K线数据');
+        const data = await res.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          setPrice(parseFloat(data[0].close));
+        } else if (data.close) {
+          // 如果后端直接返回单个对象
+          setPrice(parseFloat(data.close));
+        } else {
+          throw new Error('K线数据格式错误');
+        }
+      } catch (err) {
+        console.error('获取 Pi 实时价格失败:', err);
       }
     }
 
-    fetchPrice(); // 初始化立即加载一�?
-    const timer = setInterval(fetchPrice, intervalMs); // �?intervalMs 毫秒请求一�?
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60000); // 每分钟自动刷新
 
-    return () => clearInterval(timer); // 清除定时�?
-  }, [intervalMs]);
+    return () => clearInterval(interval);
+  }, []);
 
   return price;
 }
