@@ -68,8 +68,10 @@ export default function KLineChart() {
       }
 
       try {
-        const latestPrediction = await getPiPredictions(); // 返回单条对象或 null
-        setPrediction(latestPrediction);
+        const predictions = await getPiPredictions();
+const latest = predictions?.[0] || null;
+setPrediction(latest);
+
       } catch (err) {
         console.error('加载预测数据失败:', err);
       }
