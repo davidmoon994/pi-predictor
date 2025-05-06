@@ -1,10 +1,10 @@
 // app/api/cache-kline/route.ts
 import { NextResponse } from 'next/server';
-import { cacheKlineData } from '@lib/fetchAndCacheKline';
+import { fetchAndCacheKline } from '@lib/fetchAndCacheKline';
 
 export async function GET() {
   try {
-    await cacheKlineData();
+    await fetchAndCacheKline();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('缓存 K 线失败:', error);
