@@ -40,7 +40,7 @@ export default function CardItem({
             LIVE
           </div>
           
- {/* 进度�?(只在 live 显示) */}
+ {/* 进度�?(只在 live 显示) */}
       {status === 'live' && (
         <div className="h-2 w-full bg-gray-700 rounded mb-2 overflow-hidden">
           <div
@@ -55,12 +55,12 @@ export default function CardItem({
             UP 1.50x Payout
           </div>
         
-{/* 价格信息�?*/}
+{/* 价格信息�?*/}
 <div className="bg-gray-100 rounded-xl border border-green-300 p-3 w-full mb-3">
             <div className="text-xs text-gray-500 mb-1">LAST PRICE</div>
             <div className="text-2xl font-bold text-green-600">$0.6526</div>
             <div className="flex justify-center items-center gap-2 text-sm mt-1">
-              <span className="bg-green-200 text-green-800 px-2 py-0.5 rounded-full">�?1.5%</span>
+              <span className="bg-green-200 text-green-800 px-2 py-0.5 rounded-full">�?1.5%</span>
             </div>
             <div className="mt-2 text-xs text-gray-600">
               <div>Locked Price: <span className="font-semibold">$0.64552</span></div>
@@ -73,12 +73,12 @@ export default function CardItem({
             3.02x Payout DOWN
           </div>
           
-      {/* 奖池�?*/}
+      {/* 奖池�?*/}
       <div className="text-xs text-center text-yellow-300 mb-1">
         奖池：{prizePool} Pi
       </div>
 
-      {/* 彩蛋动画（仅 live 显示�?*/}
+      {/* 彩蛋动画（仅 live 显示�?*/}
       {status === 'live' && showEasterEgg && (
         <div className="absolute top-0 left-0 w-full h-full z-50 pointer-events-none">
           <EasterEgg />

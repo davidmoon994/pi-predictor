@@ -1,26 +1,32 @@
-// app/api/Kline/route.ts
-import { NextResponse } from 'next/server';
+// app/api/kline/route.ts
+import { NextResponse } from 'next/server'
+import { getKlineData } from '@lib/klineService'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const url = 'https://api.gate.io/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=1';
+  console.log('✅ [API] GET /api/kline started')
 
   try {
-    const res = await fetch(url, {
-      // 可以�?headers 或其他代理设�?
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store', // 禁止缓存，始终拿最新数�?
-    });
+    const data = await getKlineData()
 
-    if (!res.ok) {
-      throw new Error(`Gate.io API error: ${res.status}`);
+    if (!data || data.length === 0) {
+      return NextResponse.json({ success: false, message: 'No K-line data available' }, { status: 404 })
     }
 
-    const data = await res.json();
-    return NextResponse.json({ data });
+    return NextResponse.json({
+      success: true,
+      data: data.map((item: any) => [
+        item.timestamp / 1000,
+        item.volume,
+        item.open,
+        item.high,
+        item.low,
+        item.close,
+      ]),
+    })
   } catch (error) {
-    console.error('Error fetching K-line data:', error);
-    return NextResponse.json({ error: 'Failed to fetch K-line data' }, { status: 500 });
+    console.error('❌ Error in /api/kline:', error)
+    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
   }
 }

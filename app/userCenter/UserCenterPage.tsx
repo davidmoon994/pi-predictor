@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { auth, db } from '@lib/firebase';
-import { doc, getDoc, query, where, getDocs, updateDoc } from 'firebase/firestore';
-import { placeBet } from "@lib/betService"; // 确保下注服务已在 betService �?
+import { doc, getDoc, query, where, getDocs, updateDoc, collection } from 'firebase/firestore';
+import { placeBet } from "@lib/betService"; // 确保下注服务已在 betService
 import { drawAndSettle } from "@lib/drawService"; // 引入 drawAndSettle 逻辑
 
 const UserCenter = () => {
@@ -55,7 +55,7 @@ const UserCenter = () => {
   const handleBetConfirm = async () => {
     if (!userData || !userData.inviteCode) return;
 
-    // 从当前投注记录获得相关信�?
+    // 从当前投注记录获得相关信息
     const amount = Number(betAmount);
     if (amount <= 0 || amount > userData.points) return alert('积分不足');
 
@@ -64,7 +64,7 @@ const UserCenter = () => {
     await updateReferralBonus(userData.inviteCode, amount); // 执行分润操作
 
     alert("投注成功");
-    // 更新投注记录和余�?
+    // 更新投注记录和余额
     setUserData((prev) => ({
       ...prev,
       points: prev.points - amount,
@@ -89,13 +89,13 @@ const UserCenter = () => {
       if (!secondRefSnap.empty) {
         const secondRefUser = secondRefSnap.docs[0];
         await updateDoc(secondRefUser.ref, {
-          points: secondRefUser.data().points + Math.floor(amount * 0.01), // 二级推荐人返�?1%
+          points: secondRefUser.data().points + Math.floor(amount * 0.01), // 二级推荐人返还 1%
         });
       }
     }
   };
 
-  if (loading) return <div className="text-white p-6">加载�?..</div>;
+  if (loading) return <div className="text-white p-6">加载中...</div>;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -104,16 +104,16 @@ const UserCenter = () => {
       {userData ? (
         <>
           <div className="mb-6">
-            <p>邀请码�?/p>
+            <p>邀请码：</p>
             <div className="bg-gray-800 p-2 rounded text-green-400 text-lg">{userData.inviteCode}</div>
           </div>
 
           <div className="mb-6">
-            <p>当前积分�?span className="text-yellow-400 font-bold">{userData.points}</span></p>
+            <p>当前积分：<span className="text-yellow-400 font-bold">{userData.points}</span></p>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">我的投注记录�?/h2>
+            <h2 className="text-xl font-semibold mb-2">我的投注记录</h2>
             {myBets.length > 0 ? (
               <ul className="space-y-2">
                 {myBets.map((bet, idx) => (
@@ -128,7 +128,7 @@ const UserCenter = () => {
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold mb-2">下级用户投注记录�?/h2>
+            <h2 className="text-xl font-semibold mb-2">下级用户投注记录</h2>
             {childBets.length > 0 ? (
               <ul className="space-y-2">
                 {childBets.map((bet, idx) => (

@@ -46,7 +46,7 @@ async function applyReferralBonus(userId: string, amount: number) {
     await updateUserPoints(firstRefUser.id, Math.floor(amount * 0.02));
   }
 
-  // 二级推荐�?
+  // 二级推荐�?
   const secondRef = firstRefSnap.docs[0].data().invitedBy;
   if (secondRef) {
     const secondRefRef = query(collection(db, "users"), where("inviteCode", "==", secondRef));
@@ -72,18 +72,18 @@ export async function drawAndSettle(periodId: string, openPrice: number, closePr
   const winners = allBets.filter((b) => b.direction === result);
   const totalWinAmount = winners.reduce((sum, b) => sum + b.amount, 0);
 
-  // 按比例发放奖�?
+  // 按比例发放奖�?
   for (const bet of winners) {
     const reward = Math.floor((bet.amount / totalWinAmount) * rewardPool);
     await updateUserPoints(bet.userId, reward);
   }
 
-  // 所有下注分�?
+  // 所有下注分�?
   for (const bet of allBets) {
     await applyReferralBonus(bet.userId, bet.amount);
   }
 
-  // 写入开奖记�?
+  // 写入开奖记�?
   await addDoc(collection(db, "draws"), {
     periodId,
     result,

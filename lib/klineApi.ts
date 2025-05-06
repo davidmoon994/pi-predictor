@@ -1,4 +1,6 @@
-// app/lib/klineApi.ts
+import { getKlineFromFirestore } from '@lib/getKlineFromFirestore'; // Firestore 数据获取
+
+// K线数据接口
 export interface KlineData {
   timestamp: number;
   volume: string;
@@ -8,53 +10,53 @@ export interface KlineData {
   open: string;
 }
 
-// 获取最�?1 条（用于开奖）
+// 获取最近 50 条 K 线数据（可用于显示）
 export async function fetchLatestKlines(limit = 50) {
-    try {
-      const res = await fetch(`/api/kline`);
-      const json = await res.json();
-      if (json.data) {
-        return json.data.map((item: any[]) => ({
-          timestamp: item[0] * 1000,
-          open: item[2],
-          high: item[3],
-          low: item[4],
-          close: item[5],
-        }));
-      } else {
-        return [];
-      }
-    } catch (err) {
-      console.error("获取 K 线失�?, err);
-      return [];
-    }
+  try {
+    // 从 Firestore 获取 K 线数据
+    const firestoreData = await getKlineFromFirestore(limit);
+
+    // 格式化数据
+    return firestoreData.map((item: any) => ({
+      timestamp: item.timestamp,
+      open: item.open,
+      high: item.high,
+      low: item.low,
+      close: item.close,
+      volume: item.volume,
+    }));
+  } catch (err) {
+    console.error("获取 K 线失败:", err);
+    return [];
   }
+}
 
-
-// 获取最新价格（收盘价）
+// 获取最新的 Pi 收盘价
 export async function fetchLatestPiPrice() {
-    const res = await fetch('/api/kline/route');
-    const data = await res.json();
-    return parseFloat(data?.data?.[0]?.[2]); // 从数组中提取收盘�?
+  try {
+    const firestoreData = await getKlineFromFirestore(1);
+    return parseFloat(firestoreData[0]?.close || "0"); // 提取最新的收盘价
+  } catch (err) {
+    console.error('获取 Pi 最新价格失败:', err);
+    return 0;
   }
+}
 
-  export const fetchKlineData = async () => {
-    try {
-      const res = await fetch('/api/kline/route');
-      const json = await res.json();
-      const data = json.data;
-  
-      if (!data || data.length === 0) {
-        throw new Error('No K-line data available');
-      }
-  
-      const lastItem = data[data.length - 1];
-      const open = parseFloat(lastItem[2]);   // 开盘价
-      const close = parseFloat(lastItem[5]);  // 收盘�?
-  
-      return { open, close };
-    } catch (error) {
-      console.error('Error fetching K-line data:', error);
-      throw error;
+// 获取最新的 K 线数据（包括开盘和收盘价）
+export const fetchKlineData = async () => {
+  try {
+    const firestoreData = await getKlineFromFirestore(1);
+    if (!firestoreData || firestoreData.length === 0) {
+      throw new Error('No K-line data available');
     }
-  };
+
+    const lastItem = firestoreData[0]; // 获取最新的 K 线数据
+    const open = parseFloat(lastItem.open);   // 开盘价
+    const close = parseFloat(lastItem.close); // 收盘价
+
+    return { open, close };
+  } catch (error) {
+    console.error('Error fetching K-line data:', error);
+    throw error;
+  }
+};

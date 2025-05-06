@@ -1,76 +1,65 @@
-// app/context/AuthContext.tsx
-"use client";
+// context/AuthContext.tsx
+"use client"
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { auth } from "@lib/firebase"; // Firebase 配置文件
+import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User } from "firebase/auth";
-import { app } from "@lib/firebase";
+// 创建 Context
+const AuthContext = createContext<any>(null);
 
-// 定义用户类型
-interface UserInfo {
-  name: string;
-  email: string;
-}
-
-// 定义上下文类�?
-interface AuthContextType {
-  user: UserInfo | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-// 创建上下�?
-export const AuthContext = createContext<AuthContextType>({
-  user: null,
-  login: async () => {},
-  register: async () => {},
-  logout: async () => {},
-});
+// 使用 useAuth 钩子
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const router = useRouter();
-  const auth = getAuth(app);
+  const [user, setUser] = useState<any>(null);
 
+  // 监听认证状态的变化
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        const name = firebaseUser.displayName ?? firebaseUser.email?.split("@")[0] ?? "用户";
-        setUser({
-          name,
-          email: firebaseUser.email || "未知邮箱",
-        });
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user); // 用户已登录
       } else {
-        setUser(null);
+        setUser(null); // 用户未登录
       }
     });
 
-    return () => unsubscribe();
+    return () => unsubscribe(); // 清理监听器
   }, []);
 
+  // 用户注册
+  const signup = async (email: string, password: string) => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("注册失败", error.message);
+      } else {
+        console.error("注册失败，发生未知错误");
+      }
+    }
+    };
+
+  // 用户登录
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-    router.push("/");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("登录失败", error.message);
+      } else {
+        console.error("登录失败，发生未知错误");
+      }
+    }
   };
 
-  const register = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
-    router.push("/");
-  };
-
+  // 用户登出
   const logout = async () => {
     await signOut(auth);
-    setUser(null);
-    router.push("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-// 自定�?Hook，方便使用上下文
-export const useAuth = () => useContext(AuthContext);

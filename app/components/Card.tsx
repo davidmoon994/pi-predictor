@@ -37,7 +37,7 @@ export default function Card({ title, issueId, type = 'past', content, time }: C
         <div className="opacity-80">{issueId}</div>
       </div>
       <div className="mt-6 text-xl font-bold">{content || '预测内容'}</div>
-      <div className="mt-4 text-xs text-right">{time || '倒计�?03:15'}</div>
+      <div className="mt-4 text-xs text-right">{time || '倒计�?03:15'}</div>
     </div>
   );
 }

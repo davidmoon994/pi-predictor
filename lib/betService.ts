@@ -12,7 +12,7 @@ import {
   arrayUnion,
 } from "firebase/firestore";
 
-// 下单下注并写入记�?& 扣除积分
+// 下单下注并写入记�?& 扣除积分
 export async function placeBet(
   userId: string,
   period: string,
@@ -28,7 +28,7 @@ export async function placeBet(
     throw new Error("用户不存在或积分不足");
   }
 
-  // 先扣除用户积�?
+  // 先扣除用户积�?
   await updateDoc(userRef, {
     points: userData.points - amount,
   });
@@ -51,10 +51,10 @@ export const getCurrentPeriodBets = async (periodId: string) => {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
 
-// 开奖逻辑：处理奖池、销毁、赢家分配、分�?
+// 开奖逻辑：处理奖池、销毁、赢家分配、分�?
 export const settleBetsForPeriod = async (periodId: string) => {
   const bets = await getCurrentPeriodBets(periodId);
-  if (bets.length === 0) throw new Error("本期无投注记�?);
+  if (bets.length === 0) throw new Error("本期无投注记录");
 
   const result = Math.random() < 0.5 ? "up" : "down";
 
@@ -114,17 +114,17 @@ export const settleBetsForPeriod = async (periodId: string) => {
   return result;
 };
 
-// 获取指定期号的开奖结�?
+// 获取指定期号的开奖结�?
 export const getResultForPeriod = async (periodId: string) => {
   const q = query(collection(db, "results"), where("periodId", "==", periodId));
   const snapshot = await getDocs(q);
   if (!snapshot.empty) {
-    return snapshot.docs[0].data(); // 只取第一个结�?
+    return snapshot.docs[0].data(); // 只取第一个结�?
   }
   return null;
 };
 
-// 获取所有开奖结�?
+// 获取所有开奖结�?
 export const getAllResults = async () => {
   const snapshot = await getDocs(collection(db, "results"));
   const results: Record<string, string> = {};
