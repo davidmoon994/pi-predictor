@@ -10,13 +10,14 @@ import {
 } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAiysHgtuiu5tv2-_e36ga-dSg7ieJuH4M",
-    authDomain: "pi-predictor.firebaseapp.com",
-    projectId: "pi-predictor",
-    storageBucket: "pi-predictor.firebasestorage.app",
-    messagingSenderId: "343913166257",
-    appId: "1:343913166257:web:0b05ec875561580cb83990"
-  };
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
 
 // ✅ 只初始化一次 Firebase 应用
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
