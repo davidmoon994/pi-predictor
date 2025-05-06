@@ -10,7 +10,7 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const user = await registerUser(email, password, undefined, undefined);
+      const user = await registerUser(email, password);
 
       console.log('用户登录成功：', user);
     } catch (error) {
