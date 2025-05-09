@@ -1,0 +1,116 @@
+/* --- userCenter.css --- */
+/* 放在 app/userCenter/userCenter.css 并在 layout 或入口页引用 */
+/* 复古明信片统一风格优化 */
+/* /app/userCenter/userCenter.css */
+
+.user-center {
+  padding-top: 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Georgia', serif;
+  color: #2c2c2c;
+}
+
+.content {
+  padding: 20px;
+}
+
+.postcard {
+  background: linear-gradient(145deg, #f8f5e2, #e6dec1);
+  border-radius: 16px;
+  box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.15),
+              -6px -6px 12px rgba(255, 255, 255, 0.6);
+  padding: 20px;
+  margin-bottom: 30px;
+  overflow: hidden;
+  border: 1px solid #d6cdb2;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-right: 20px;
+  border: 2px solid #ccc;
+}
+
+.card-title h3 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #3a2f1c;
+  text-shadow: 1px 1px 0 #f0e8d9;
+}
+
+.card-body {
+  font-size: 1.05rem;
+  color: #2f2a23;
+  line-height: 1.6;
+}
+
+.card-body p {
+  margin: 10px 0;
+}
+
+.card-body button {
+  background-color: #a07a3d;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.card-body button:hover {
+  background-color: #8b6731;
+}
+
+.subordinate-list,
+.commission-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.sub-title {
+  font-weight: 700;
+  margin-top: 15px;
+  font-size: 1.1rem;
+  color: #3a2f1c;
+  text-shadow: 1px 1px 0 #f0e8d9;
+}
+
+.qr-code-info {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-recharge,
+.btn-withdraw {
+  background-color: #4e9e9e;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-right: 10px;
+  font-weight: bold;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.btn-recharge:hover,
+.btn-withdraw:hover {
+  background-color: #358585;
+}
+
+.postcard .card-header h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2f2617;
+  text-shadow: 1px 1px 0 #f8f1dc;
+}

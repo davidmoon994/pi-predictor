@@ -1,3 +1,4 @@
+//app/components/KLineChart.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -69,21 +70,21 @@ export default function KLineChart() {
 
       try {
         const predictions = await getPiPredictions();
-const latest = predictions?.[0] || null;
-setPrediction(latest);
-
+        const latest = predictions?.[0] || null;
+        setPrediction(latest);
       } catch (err) {
         console.error('加载预测数据失败:', err);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 60 * 1000); // 每分钟刷新
+    const interval = setInterval(fetchData, 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
   const options: ChartOptions<'candlestick'> = {
     responsive: true,
+    maintainAspectRatio: false, // 关键：允许容器控制高宽比
     scales: {
       x: {
         type: 'time',
@@ -109,23 +110,23 @@ setPrediction(latest);
   if (!chartData) return <div>图表加载中...</div>;
 
   return (
-    <div className="bg-white p-4 rounded shadow w-full max-w-4xl mx-auto">
-      <h2 className="text-xl font-bold mb-4">Pi 币 5 分钟蜡烛图</h2>
-      <Chart type="candlestick" data={chartData} options={options} />
+    <div className="bg-white p-4 rounded shadow w-full">
 
-      <div className="mt-6 bg-gray-50 p-4 rounded border border-gray-200">
-        <h3 className="text-md font-semibold mb-2">最新预测数据：</h3>
-        {!prediction ? (
-          <p className="text-gray-500">暂无预测数据</p>
-        ) : (
-          <ul className="list-disc pl-5 text-sm text-gray-700">
-            <li>
-              时间：{new Date(prediction.timestamp).toLocaleTimeString()}，
-              预测收盘价：{prediction.close}
-            </li>
-          </ul>
-        )}
+      <h2 className="text-xl font-bold mb-4">Pi 币 5 分钟蜡烛图</h2>
+
+      {/* 自适应容器（关键：aspect-[6/1]） */}
+      <div className="relative w-full aspect-6/1]">
+        <Chart type="candlestick" data={chartData} options={options} />
       </div>
+
+      {/* 预测数据展示 */}
+      {prediction && (
+  <div className="flex flex-wrap text-sm text-gray-700 gap-x-4 mt-4">
+    <span>时间：{new Date(prediction.timestamp).toLocaleTimeString()}</span>
+    <span>预测收盘价：{prediction.close}</span>
+  </div>
+)}
+
     </div>
   );
 }

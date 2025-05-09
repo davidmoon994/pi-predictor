@@ -1,11 +1,10 @@
 // lib/klineService.ts
-import { getCachedKlineData } from './getKlineFromFirestore'
+import { getKlineFromFirestore } from './getKlineFromFirestore'
 import { fetchAndCacheKline } from './fetchAndCacheKline'
 
 export async function getKlineData() {
-  let cached = await getCachedKlineData()
+  let cached = await getKlineFromFirestore() // ✅ 修改这里！
 
-  // 如果缓存无数据，或时间戳超过5分钟则刷新
   const now = Date.now()
   const maxAge = 5 * 60 * 1000
 
@@ -16,9 +15,8 @@ export async function getKlineData() {
   if (isStale) {
     console.log('📡 Fetching fresh K-line data...')
     await fetchAndCacheKline()
-    cached = await getCachedKlineData()
+    cached = await getKlineFromFirestore() // ✅ 再次使用这个
   }
 
   return cached || []
 }
-

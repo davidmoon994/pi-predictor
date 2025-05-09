@@ -1,63 +1,87 @@
 "use client";
+
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import RegisterModal from "@/components/RegisterModal"; // 你需要创建这个组件
+import RegisterModal from "@/components/RegisterModal";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [showRegister, setShowRegister] = useState(false); // 控制弹窗显示
+
+  const [showRegister, setShowRegister] = useState(false);
+  const [selectedToken, setSelectedToken] = useState("PI");
+  const [price, setPrice] = useState("0.00"); // 你可以改为从 API 获取价格
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login"); // 可以跳回首页或登录页
+    router.push("/");
   };
 
   return (
     <>
-      <nav className="bg-gray-900 text-white p-4 shadow-lg flex justify-between items-center">
-        <Link
-          href="/"
-          className="text-xl font-bold text-yellow-400 hover:text-yellow-300 transition duration-300"
-        >
-          Pi币值预测有奖竞猜
-        </Link>
+      <nav className="bg-gray-900 text-white px-6 py-4 shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {/* 左侧 Logo/GIF + 币种选择和实时价格紧挨 */}
+          <div className="flex items-center space-x-4">
+            <Link href="/" className="flex items-center space-x-2 group">
+              <img
+                src="/pi-network.gif"
+                alt="Pi Network 动画"
+                className="w-8 h-8 rounded-sm"
+              />
+            </Link>
+         {/* 币种选择 + 实时价格 */}
+<div className="flex items-center space-x-4">
+  <select
+    className="bg-amber-300 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all"
+    value={selectedToken}
+    onChange={(e) => setSelectedToken(e.target.value)}
+  >
+    <option value="PI">Pi/USDT</option>
+    <option value="PI-CNY">Pi/CNY</option>
+  </select>
+  <span className="text-green-400 font-semibold">
+    价格 {price}
+  </span>
+</div>
+</div>
 
-        <div className="space-x-4">
-          {!user ? (
-            <>
+          {/* 右侧按钮区 */}
+          <div className="space-x-4 flex items-center">
+            {!user ? (
               <button
                 onClick={() => setShowRegister(true)}
-                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded transition duration-300"
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-lg font-medium transition"
               >
                 注册 / 登录
               </button>
-              {/* 注册弹窗 */}
-              {showRegister && <RegisterModal onClose={() => setShowRegister(false)} />}
-            </>
-          ) : (
-            <>
-              <span className="px-3 py-2 text-green-400 font-medium">
-                欢迎，{user.email}
-              </span>
-              <Link
-                href="/userCenter"
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded transition duration-300"
-              >
-                用户中心
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded transition duration-300"
-              >
-                退出
-              </button>
-            </>
-          )}
+            ) : (
+              <>
+                <span className="text-green-400 font-medium hidden sm:inline">
+                  欢迎，{user.email}
+                </span>
+                <Link
+                  href="/userCenter"
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded-lg font-medium transition"
+                >
+                  用户中心
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition"
+                >
+                  退出
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </nav>
+
+      {/* 注册弹窗 */}
+      {showRegister && <RegisterModal onClose={() => setShowRegister(false)} />}
     </>
   );
 }

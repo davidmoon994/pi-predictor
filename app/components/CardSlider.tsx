@@ -11,13 +11,12 @@ const CardSlider = () => {
   const [openPrice, setOpenPrice] = useState<number | null>(null);
   const [closePrice, setClosePrice] = useState<number | null>(null);
   const [periodId, setPeriodId] = useState("20250421");
-  const [timeLeft, setTimeLeft] = useState(300); // 默认300秒倒计时
+  const [timeLeft, setTimeLeft] = useState(300);
   const [latestPrice, setLatestPrice] = useState<number | null>(null);
 
-  const cardWidth = 280; // 每张卡片宽度 + 间距
-  const maxIndex = 5; // 最多显示5张
+  const cardWidth = 280;
+  const maxIndex = 5;
 
-  // 使用 fetch 调用 API 获取最新 Pi 价格
   const fetchLatestPiPrice = async () => {
     try {
       const response = await fetch('/api/kline');
@@ -29,7 +28,6 @@ const CardSlider = () => {
     }
   };
 
-  // 使用 fetch 调用 API 获取 K 线数据
   const fetchKlineData = async () => {
     try {
       const response = await fetch('/api/kline');
@@ -45,37 +43,32 @@ const CardSlider = () => {
     }
   };
 
-  // 每分钟自动拉取最新价格
   useEffect(() => {
     const updatePrice = async () => {
       const price = await fetchLatestPiPrice();
       setLatestPrice(price);
     };
 
-    updatePrice(); // 页面首次加载
-    const interval = setInterval(updatePrice, 60000); // 每分钟更新一次
+    updatePrice();
+    const interval = setInterval(updatePrice, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // 获取 K 线数据并设置开盘和收盘价
   const updateKlineData = async () => {
     const { open, close } = await fetchKlineData();
     setOpenPrice(open);
     setClosePrice(close);
   };
 
-  // 定时获取 K 线数据和更新时间
   useEffect(() => {
-    updateKlineData(); // 页面首次加载时获取数据
-    const interval = setInterval(updateKlineData, 60000); // 每分钟更新一次
-    return () => clearInterval(interval); // 清理定时器
+    updateKlineData();
+    const interval = setInterval(updateKlineData, 60000);
+    return () => clearInterval(interval);
   }, []);
 
-  // 倒计时逻辑
   useEffect(() => {
     if (timeLeft <= 0) {
       if (openPrice !== null && closePrice !== null) {
-        // 调用开奖处理逻辑（假设drawAndSettle已在上下文中）
         drawAndSettle(periodId, openPrice, closePrice);
       }
     }
@@ -87,7 +80,16 @@ const CardSlider = () => {
     return () => clearInterval(timer);
   }, [timeLeft, openPrice, closePrice]);
 
-  // 左右箭头点击滚动
+  // 页面加载时自动滚动到最右侧
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (slider) {
+      requestAnimationFrame(() => {
+        slider.scrollLeft = slider.scrollWidth - slider.clientWidth;
+      });
+    }
+  }, []);
+
   const scrollLeft = () => {
     if (scrollIndex > 0) {
       const newIndex = scrollIndex - 1;
@@ -106,46 +108,27 @@ const CardSlider = () => {
 
   return (
     <div className="relative w-full">
-      {/* 顶部箭头导航 */}
-      <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-8 z-20">
-        <button
-          onClick={scrollLeft}
-          className="w-10 h-10 rounded-full border-2 border-white text-white font-bold text-xl shadow-md hover:scale-105 transition transform duration-300 bg-black/40"
-        >
-          ←
-        </button>
-        <button
-          onClick={scrollRight}
-          className="w-10 h-10 rounded-full border-2 border-white text-white font-bold text-xl shadow-md hover:scale-105 transition transform duration-300 bg-black/40"
-        >
-          →
-        </button>
-      </div>
-
+      
       {/* 卡片滑动区域 */}
       <div
         ref={sliderRef}
-        className="w-full overflow-x-auto whitespace-nowrap flex items-start gap-4 px-4 pb-2 scroll-smooth"
-        style={{ scrollBehavior: "smooth" }}
+        className="w-full overflow-x-scroll whitespace-nowrap flex items-start gap-4 px-4 pb-2 scroll-smooth scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"
+        style={{ scrollBehavior: "smooth", scrollbarGutter: "stable" }}
       >
-        {/* Past Cards (最近十期）*/}
         {["20250411","20250412","20250413","20250414","20250415","20250416","20250417","20250418","20250419", "20250420"].map((period) => (
           <div key={period} className="inline-block w-[260px] shrink-0">
             <PastCard period={period} />
           </div>
         ))}
 
-        {/* Current Card */}
         <div className="inline-block w-[260px] shrink-0">
           <CurrentCard period={periodId} />
         </div>
 
-        {/* Next Card */}
         <div className="inline-block w-[260px] shrink-0">
           <NextCard period={(+periodId + 1).toString()} />
         </div>
 
-        {/* Upcoming Card */}
         <div className="inline-block w-[260px] shrink-0">
           <UpcomingCard period={(+periodId + 2).toString()} />
         </div>

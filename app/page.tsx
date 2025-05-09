@@ -2,23 +2,37 @@
 
 import React, { useState, useEffect } from "react";
 import { getPiPredictions } from "@lib/getPiPredictions";
-import { useRouter } from "next/navigation";
-import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import KLineChart from "./components/KLineChart";
 import CardSlider from "./components/CardSlider";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+
+type KlineItem = {
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
+
+type PredictionItem = {
+  timestamp: number;
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+  volume: number;
+};
 
 export default function HomePage() {
   const [price, setPrice] = useState("3.14");
   const [selectedToken, setSelectedToken] = useState("PI");
-  const [klineData, setKlineData] = useState([]);
-  const [predictions, setPredictions] = useState([]);
+  const [klineData, setKlineData] = useState<KlineItem[]>([]);
+  const [predictions, setPredictions] = useState<PredictionItem[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("api/kline");
+        const res = await fetch("/api/kline");
         const rawData = await res.json();
 
         const formattedData = rawData.map((item: any) => ({
@@ -55,50 +69,31 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="flex flex-col items-center px-4 py-6 space-y-6 bg-gradient-to-b from-gray-900 via-gray-950 to-black min-h-screen text-white">
-      {/* 第一行：圆角按钮 + 币种选择 + 实时价格 */}
-      <div className="w-full flex justify-between items-center bg-gray-800 rounded-xl px-4 py-2 shadow">
-        <button className="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600">
-          操作按钮
-        </button>
-        <div className="flex items-center space-x-4">
-          <select
-            className="bg-gray-700 text-white px-3 py-2 rounded"
-            value={selectedToken}
-            onChange={(e) => setSelectedToken(e.target.value)}
-          >
-            <option value="PI">Pi/USDT</option>
-            <option value="PI-CNY">Pi/CNY</option>
-          </select>
-          <span className="text-green-400 font-semibold">
-            实时价格 {price}
-          </span>
+    <main
+      className="relative flex flex-col items-center px-4 py-6 space-y-6 min-h-screen text-white bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/page.jpg')" }}
+    >
+      {/* 遮罩层 */}
+      <div className="absolute inset-0 bg-black/70 z-0" />
+  
+      {/* 内容区域（在遮罩之上） */}
+      <div className="relative z-10 w-full flex flex-col items-center space-y-6">
+        {/* 卡片滑动组件 */}
+        <CardSlider />
+  
+        {/* K线图组件 */}
+        <KLineChart />
+  
+        {/* 底部按钮 */}
+        <div className="w-full flex justify-center gap-6 bg-gray-800/80 py-3 rounded-xl shadow">
+          <button className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white">Pi NFT</button>
+          <button className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white">Pi 金融</button>
+          <button className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white">更多功能</button>
         </div>
+  
+        {/* 占位防止遮挡 */}
+        <div className="h-12"></div>
       </div>
-
-      {/* 第二行：箭头组件（预留） */}
-
-      {/* 第三行：卡片组件 */}
-      <CardSlider />
-
-      {/* 第四行：K线图组件 */}
-      <KLineChart predictions={predictions} />
-
-      {/* 第五行：底部菜单 */}
-      <div className="w-full flex justify-center gap-6 bg-gray-800 py-3 rounded-xl shadow">
-        <button className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white">
-          Pi NFT
-        </button>
-        <button className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white">
-          Pi 金融
-        </button>
-        <button className="px-4 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white">
-          更多功能
-        </button>
-      </div>
-
-      {/* 第六行：底部占位 */}
-      <div className="h-12"></div>
     </main>
   );
 }

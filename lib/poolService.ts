@@ -1,7 +1,8 @@
+// lib/poolService.ts
 import { db } from "./firebase";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
-// 奖池结构存储�?pools/{periodId} �?
+// 更新奖池
 export const updatePoolAfterBet = async (
   periodId: string,
   amount: number,
@@ -11,7 +12,6 @@ export const updatePoolAfterBet = async (
   const poolSnap = await getDoc(poolRef);
 
   if (!poolSnap.exists()) {
-    // 第一次下注，初始化奖�?
     await setDoc(poolRef, {
       periodId,
       total: amount,
@@ -31,35 +31,23 @@ export const updatePoolAfterBet = async (
   }
 };
 
-// 开奖结算逻辑
-export const resolvePool = async (
-  periodId: string,
-  winningDirection: "up" | "down"
-) => {
+// 结算奖池
+export const resolvePool = async (periodId: string, winningDirection: "up" | "down") => {
   const poolRef = doc(db, "pools", periodId);
   const poolSnap = await getDoc(poolRef);
-  if (!poolSnap.exists()) throw new Error("奖池不存�?);
+  if (!poolSnap.exists()) throw new Error("奖池不存在");
 
   const pool = poolSnap.data();
-  if (pool.resolved) throw new Error("已结�?);
+  if (pool.resolved) throw new Error("已结算");
 
   const totalPool = pool.total;
-  const destroyAmount = totalPool * 0.06; // 销�?%
-  const remaining = totalPool - destroyAmount;
+  const destroyed = Math.floor(totalPool * 0.06); // 销毁6%
+  const remaining = totalPool - destroyed;
 
-  const winTotal =
-    winningDirection === "up" ? pool.upTotal : pool.downTotal;
+  const winners = (pool.bets || []).filter((bet) => bet.direction === winningDirection);
 
-  // 获取所有中奖下注记�?
-  const winners = (pool.bets || []).filter(
-    (bet) => bet.direction === winningDirection
-  );
-
-  // 分配奖金
   for (const winner of winners) {
-    const reward = (winner.amount / winTotal) * remaining;
-
-    // 更新用户积分
+    const reward = (winner.amount / remaining) * remaining;
     const userRef = doc(db, "users", winner.userId);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
@@ -70,10 +58,9 @@ export const resolvePool = async (
     }
   }
 
-  // 更新奖池为已结算状�?
   await updateDoc(poolRef, {
     resolved: true,
     winningDirection,
-    destroyAmount,
+    destroyed,
   });
 };

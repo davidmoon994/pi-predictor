@@ -1,64 +1,125 @@
-// components/RegisterModal.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { registerUser } from "@lib/authService";
+import { useSearchParams } from "next/navigation";
 
-type Props = {
-  onClose: () => void;
-};
-
-export default function RegisterModal({ onClose }: Props) {
+export default function RegisterModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [error, setError] = useState("");
+  const [inviterId, setInviterId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const handleRegister = async () => {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const inviter = searchParams.get("inviter");
+    if (inviter) setInviterId(inviter);
+  }, [searchParams]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (password !== confirmPassword) {
+      setError("两次密码输入不一致");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        body: JSON.stringify({ email, password, displayName }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!res.ok) throw new Error("注册失败");
-      alert("注册成功！");
-      onClose();
-    } catch (e: any) {
-      setError(e.message);
+      await registerUser(email, password, displayName, inviterId || undefined);
+      setSuccess(true);
+      setTimeout(() => {
+        onClose(); // 延迟关闭
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || "注册失败");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">注册新账号</h2>
-        <input
-          type="text"
-          placeholder="昵称"
-          className="border p-2 w-full mb-2"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-        />
-        <input
-          type="email"
-          placeholder="邮箱"
-          className="border p-2 w-full mb-2"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="密码"
-          className="border p-2 w-full mb-4"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">取消</button>
-          <button onClick={handleRegister} className="px-4 py-2 bg-blue-500 text-white rounded">注册</button>
-        </div>
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl relative">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-500 hover:text-black text-xl"
+        >
+          ×
+        </button>
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
+          注册账户
+        </h2>
+
+        {success ? (
+          <p className="text-green-600 text-center font-semibold">✅ 注册成功！正在关闭窗口...</p>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-gray-700 text-sm">你的邮箱</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full p-2 border border-gray-300 rounded text-black mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-gray-700 text-sm">输入密码</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full p-2 border border-gray-300 rounded text-black mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-gray-700 text-sm">确认密码</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full p-2 border border-gray-300 rounded text-black mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-gray-700 text-sm">你的账户ID / 昵称</label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+                className="w-full p-2 border border-gray-300 rounded text-black mt-1"
+              />
+            </div>
+
+            {inviterId && (
+              <p className="text-sm text-green-600">邀请人ID: {inviterId}</p>
+            )}
+
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded"
+            >
+              {loading ? "注册中..." : "立即注册"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

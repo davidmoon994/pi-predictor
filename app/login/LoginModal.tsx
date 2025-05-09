@@ -1,4 +1,4 @@
-// app/components/LoginModal.tsx
+// app/login/LoginModal.tsx
 import React, { useState } from 'react';
 
 const LoginModal = ({ closeModal }: { closeModal: () => void }) => {
