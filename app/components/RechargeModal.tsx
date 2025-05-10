@@ -1,0 +1,106 @@
+//app/components/RechargeModal.tsx
+'use client';
+
+import { useState } from 'react';
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import { db } from '@lib/firebase';
+
+export default function RechargeModal({
+  isOpen,
+  onClose,
+  userId,
+  onSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string;
+  onSuccess?: () => void;
+}) {
+  const [accountId, setAccountId] = useState('');
+  const [amount, setAmount] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleRecharge = async () => {
+    if (!accountId.trim()) return setMessage('请输入您的账户 ID');
+    if (amount <= 0) return setMessage('请输入大于 0 的金额');
+    setLoading(true);
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        points: increment(amount),
+      });
+      setMessage(`充值成功：${amount} PI`);
+      setAmount(0);
+      setAccountId('');
+      onSuccess?.();
+    } catch {
+      setMessage('充值失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        backgroundImage: `
+          url(/page.jpg), url(/page.jpg),
+          url(/page.jpg), url(/page.jpg)
+        `,
+        backgroundPosition: 'top left, top right, bottom left, bottom right',
+        backgroundSize: '50% 50%',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)', // 加深遮罩
+      }}
+    >
+      <div className="bg-white bg-opacity-90 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-gray-300 max-w-sm w-full relative">
+        <h2 className="text-xl font-bold mb-4 text-center">充值Pi</h2>
+
+        <div className="mb-3">
+          <label className="text-sm text-gray-700">平台账户 ID：</label>
+          <p className="text-base font-semibold text-gray-900">123456789025</p>
+        </div>
+
+        <input
+          type="text"
+          placeholder="请输入您的账户 ID"
+          className="w-full p-3 rounded-lg border border-gray-300 mb-3 focus:outline-none focus:ring-2 focus:ring-green-400"
+          value={accountId}
+          onChange={(e) => setAccountId(e.target.value)}
+        />
+
+        <input
+          type="number"
+          placeholder="请输入要充值的Pi数量"
+          className="w-full p-3 rounded-lg border border-gray-300 mb-4 focus:outline-none focus:ring-2 focus:ring-green-400"
+          value={amount}
+          onChange={(e) => setAmount(Number(e.target.value))}
+        />
+
+        <div className="flex justify-between">
+          <button
+            onClick={onClose}
+            className="text-sm text-gray-600 underline"
+          >
+            取消
+          </button>
+          <button
+            onClick={handleRecharge}
+            disabled={loading}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all transform hover:-translate-y-0.5"
+          >
+            {loading ? '提交中...' : '确认充值'}
+          </button>
+        </div>
+
+        {message && (
+          <p className="text-center text-sm text-gray-700 mt-3">{message}</p>
+        )}
+      </div>
+    </div>
+  );
+}
