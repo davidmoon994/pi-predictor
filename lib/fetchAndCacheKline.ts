@@ -1,43 +1,55 @@
-// ✅ 使用 firebase-admin 初始化 Firestore
-import { db } from './firebase-admin'
-import { Timestamp, serverTimestamp } from 'firebase-admin/firestore'
+//lib/fetchAndCacheKline.ts
+import https from 'https';
+import { db } from './firebase-admin';
 
-// ✅ 自动重试 fetch 工具函数
-async function fetchWithRetry(url: string, retries = 3, delay = 2000): Promise<Response> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const res = await fetch(url)
-      if (res.ok) return res
-      throw new Error(`响应失败：${res.status}`)
-    } catch (err) {
-      if (i === retries - 1) throw err
-      console.warn(`⚠️ 第 ${i + 1} 次请求失败，重试中... (${delay}ms)`)
-      await new Promise((r) => setTimeout(r, delay))
-    }
-  }
-  throw new Error('所有请求均失败')
-}
+export async function fetchAndCacheKlinesFromGate(): Promise<any[]> {
+  const url = 'https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=50';
 
-export async function fetchAndCacheKline() {
-  console.log('📥 开始拉取 Gate.io K 线数据...')
-  const url = 'https://api.gate.io/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=1'
+  return new Promise((resolve, reject) => {
+    https.get(url, async (res) => {
+      let data = '';
 
-  const res = await fetchWithRetry(url)
-  const data = await res.json()
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
 
-  const [timestamp, volume, close, high, low, open] = data[0]
-  const klineData = {
-    timestamp: Number(timestamp) * 1000,
-    volume,
-    close,
-    high,
-    low,
-    open,
-    createdAt: serverTimestamp(),
-  }
+      res.on('end', async () => {
+        try {
+          const parsed = JSON.parse(data);
+          console.log('🔥 成功解析 Gate.io 返回的数据:', parsed);
 
-  console.log('📤 写入 Firestore：', klineData)
+          const klineData = parsed.map(item => ({
+            timestamp: Number(item[0]),       // ✅ 时间戳（秒）
+            volume: parseFloat(item[1]),      // ✅ 成交量（币）
+            close: parseFloat(item[2]),       // ✅ 收盘价
+            high: parseFloat(item[3]),        // ✅ 最高价
+            low: parseFloat(item[4]),         // ✅ 最低价
+            open: parseFloat(item[5]),        // ✅ 开盘价（注意是 item[5]）
+            quoteVolume: parseFloat(item[6]), // ✅ 成交额（USDT）
+            isClosed: true,
+          }));
+          
+          
+          
 
-  await db.collection('kline').doc(String(klineData.timestamp)).set(klineData, { merge: true })
-  console.log('✅ K线数据成功获取并存储')
+          console.log('🔥 准备写入 Firestore：', klineData);
+
+          const klineRef = db.collection('kline').doc('latest');
+          await klineRef.set({
+            data: klineData,
+            timestamp: new Date()
+          });
+
+          console.log('🔥 K线数据成功写入 Firestore！');
+          resolve(klineData);
+        } catch (err) {
+          console.error('🔥 JSON 解析失败:', err);
+          reject(new Error('解析响应失败'));
+        }
+      });
+    }).on('error', (err) => {
+      console.error('🔥 HTTPS 请求错误:', err);
+      reject(new Error('请求失败'));
+    });
+  });
 }

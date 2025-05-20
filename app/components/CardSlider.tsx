@@ -1,3 +1,4 @@
+//app/components/CardSlider.tsx
 import { useRef, useState, useEffect } from "react";
 import PastCard from "./PastCard";
 import CurrentCard from "./CurrentCard";
@@ -10,24 +11,20 @@ const CardSlider = () => {
   const [scrollIndex, setScrollIndex] = useState(0);
   const [openPrice, setOpenPrice] = useState<number | null>(null);
   const [closePrice, setClosePrice] = useState<number | null>(null);
-  const [periodId, setPeriodId] = useState("20250421");
+  const [periodId, setPeriodId] = useState("20250521");
   const [timeLeft, setTimeLeft] = useState(300);
   const [latestPrice, setLatestPrice] = useState<number | null>(null);
 
   const cardWidth = 280;
-  const maxIndex = 5;
 
-  const fetchLatestPiPrice = async () => {
-    try {
-      const response = await fetch('/api/kline');
-      const data = await response.json();
-      return data?.data?.[0]?.close || null;
-    } catch (error) {
-      console.error("Failed to fetch Pi price:", error);
-      return null;
-    }
+  // ✅ 自动推进期数
+  const goToNextPeriod = () => {
+    const nextPeriod = (parseInt(periodId) + 1).toString();
+    setPeriodId(nextPeriod);
+    setTimeLeft(300); // 重置倒计时
   };
 
+  // ✅ 获取收盘价
   const fetchKlineData = async () => {
     try {
       const response = await fetch('/api/kline');
@@ -44,43 +41,35 @@ const CardSlider = () => {
   };
 
   useEffect(() => {
-    const updatePrice = async () => {
-      const price = await fetchLatestPiPrice();
-      setLatestPrice(price);
+    const updateKlineData = async () => {
+      const { open, close } = await fetchKlineData();
+      setOpenPrice(open);
+      setClosePrice(close);
     };
 
-    updatePrice();
-    const interval = setInterval(updatePrice, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const updateKlineData = async () => {
-    const { open, close } = await fetchKlineData();
-    setOpenPrice(open);
-    setClosePrice(close);
-  };
-
-  useEffect(() => {
     updateKlineData();
     const interval = setInterval(updateKlineData, 60000);
     return () => clearInterval(interval);
   }, []);
 
+  // ✅ 倒计时与开奖逻辑
   useEffect(() => {
     if (timeLeft <= 0) {
       if (openPrice !== null && closePrice !== null) {
-        drawAndSettle(periodId, openPrice, closePrice);
+        drawAndSettle(periodId, openPrice, closePrice).then(() => {
+          goToNextPeriod(); // 开奖后自动切换期数
+        });
       }
     }
 
     const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, openPrice, closePrice]);
+  }, [timeLeft, openPrice, closePrice, periodId]);
 
-  // 页面加载时自动滚动到最右侧
+  // ✅ 页面加载时自动滑动到最右
   useEffect(() => {
     const slider = sliderRef.current;
     if (slider) {
@@ -106,16 +95,20 @@ const CardSlider = () => {
     }
   };
 
+  // ✅ 构造近期历史卡片
+  const pastPeriods = Array.from({ length: 10 }, (_, i) =>
+    (parseInt(periodId) - 10 + i).toString()
+  );
+
   return (
     <div className="relative w-full">
-      
-      {/* 卡片滑动区域 */}
+      {/* 滑动区域 */}
       <div
         ref={sliderRef}
         className="w-full overflow-x-scroll whitespace-nowrap flex items-start gap-4 px-4 pb-2 scroll-smooth scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"
         style={{ scrollBehavior: "smooth", scrollbarGutter: "stable" }}
       >
-        {["20250411","20250412","20250413","20250414","20250415","20250416","20250417","20250418","20250419", "20250420"].map((period) => (
+        {pastPeriods.map((period) => (
           <div key={period} className="inline-block w-[260px] shrink-0">
             <PastCard period={period} />
           </div>
@@ -126,11 +119,11 @@ const CardSlider = () => {
         </div>
 
         <div className="inline-block w-[260px] shrink-0">
-          <NextCard period={(+periodId + 1).toString()} />
+          <NextCard period={(parseInt(periodId) + 1).toString()} />
         </div>
 
         <div className="inline-block w-[260px] shrink-0">
-          <UpcomingCard period={(+periodId + 2).toString()} />
+          <UpcomingCard period={(parseInt(periodId) + 2).toString()} />
         </div>
       </div>
     </div>

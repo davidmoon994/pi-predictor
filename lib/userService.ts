@@ -1,7 +1,16 @@
 // lib/userService.ts
-import { doc, getDoc, setDoc, collection, query, where, getDocs, updateDoc, increment,  DocumentData} from 'firebase/firestore';
+import {
+  doc,
+  setDoc,
+  collection,
+  addDoc,
+  getDoc,
+  getDocs,
+  query,
+  where
+} from 'firebase/firestore';
 import { db } from './firebase';
-
+import { auth } from './firebase'; // 确保引入 auth
 // 定义 Commission 类型
 type Commission = {
   id: string;
@@ -55,35 +64,20 @@ export async function getCommissionData(userId: string): Promise<Commission[]> {
   return commissions;
 }
 
-// 处理充值/提现
-export async function processTransaction(uid, amount, type) {
-  const userRef = doc(db, 'users', uid);
+// 用户申请充值或提现，初始 status 为 pending
+export async function requestTransaction(uid: string, amount: number, type: 'recharge' | 'withdraw') {
+  await addDoc(collection(db, 'transactions'), {
+    userId: uid,
+    amount,
+    type,
+    status: 'pending', // 等待管理员审核
+    timestamp: Date.now(),
+  });
+}
 
-  if (type === 'recharge') {
-    await updateDoc(userRef, {
-      points: increment(amount), // 增加积分
-    });
-
-    // 记录充值交易
-    const transactionRef = collection(db, 'transactions');
-    await setDoc(doc(transactionRef), {
-      userId: uid,
-      amount,
-      type: 'recharge',
-      timestamp: new Date(),
-    });
-  } else if (type === 'withdraw') {
-    await updateDoc(userRef, {
-      points: increment(-amount), // 减少积分
-    });
-
-    // 记录提现交易
-    const transactionRef = collection(db, 'transactions');
-    await setDoc(doc(transactionRef), {
-      userId: uid,
-      amount,
-      type: 'withdraw',
-      timestamp: new Date(),
-    });
-  }
+// 获取用户充值/提现记录（用于前台展示历史记录）
+export async function getUserTransactions(uid: string) {
+  const q = query(collection(db, 'transactions'), where('userId', '==', uid));
+  const snap = await getDocs(q);
+  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }

@@ -1,30 +1,46 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
+    "target": "esnext", // 使用最新的 JavaScript 语法
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ], // 设置要包含的库文件
+    "allowJs": true, // 允许编译 JavaScript 文件
+    "skipLibCheck": true, // 跳过库文件检查
+    "strict": true, // 启用所有严格类型检查
+    "forceConsistentCasingInFileNames": true, // 强制文件名一致性
+    "noEmit": true, // 不生成输出文件
+    "esModuleInterop": true, // 允许默认导入
+    "module": "ESNext", // 设置模块为 ESNext
+    "moduleResolution": "node", // 使用 Node.js 模块解析策略
+    "resolveJsonModule": true, // 允许导入 JSON 文件
+    "skipDefaultLibCheck": true, // 跳过默认库的检查
+    "isolatedModules": true, // 启用单文件隔离模式
+    "baseUrl": ".", // 设置基础目录
+    "paths": {
+      "@/*": [
+        "./app/*"
+      ], // 映射 @/* 到 ./app/* 目录
+      "@lib/*": [
+        "./lib/*"
+      ] // 映射 @lib/* 到 ./lib/* 目录
+    },
     "incremental": true,
+    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./app/*"],
-      "@lib/*": ["./lib/*"]
-    }
+    ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*.ts", // 包含所有 TypeScript 文件
+    "test/**/*.ts" // 包含测试文件夹中的 TypeScript 文件
+    ,
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

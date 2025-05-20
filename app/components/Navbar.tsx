@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import RegisterModal from "@/components/RegisterModal";
+import { useLatestPiPrice } from '@/hooks/useLatestPiPrice'
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -12,7 +13,7 @@ export default function Navbar() {
 
   const [showRegister, setShowRegister] = useState(false);
   const [selectedToken, setSelectedToken] = useState("PI");
-  const [price, setPrice] = useState("0.00"); // 你可以改为从 API 获取价格
+  const price = useLatestPiPrice(); // 从 useLatestPiPrice获取价格
 
   const handleLogout = async () => {
     await logout();
@@ -43,7 +44,7 @@ export default function Navbar() {
     <option value="PI-CNY">Pi/CNY</option>
   </select>
   <span className="text-green-400 font-semibold">
-    价格 {price}
+  价格 {price ? price.toFixed(4) : "加载中..."}
   </span>
 </div>
 </div>

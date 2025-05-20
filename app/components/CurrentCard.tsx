@@ -1,38 +1,76 @@
+//app/components/CurrentCard.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import { placeBet } from "@lib/betService";
 import { drawAndSettle } from "@lib/drawService";
+import { getPoolAmount } from "@lib/poolService";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "@lib/firebase";
+import EasterEgg from "@/components/effects/EasterEgg";
+import { useLatestPiPrice } from '@/hooks/useLatestPiPrice';
 
-const CurrentCard = ({ period, user }: { period: string; user: any }) => {
+const CurrentCard = ({ period, user, onPeriodEnd}: { period: string; user: any ;onPeriodEnd: () => void }) => {
   const [timeLeft, setTimeLeft] = useState(300);
-  const [selection, setSelection] = useState<'up' | 'down' | null>(null);
   const [userPoints, setUserPoints] = useState(user?.points || 0);
-  const [latestPrice, setLatestPrice] = useState<number | null>(null);
   const [openPrice, setOpenPrice] = useState<number | null>(null);
+  const [closePrice, setClosePrice] = useState<number | null>(null);
   const [drawTriggered, setDrawTriggered] = useState(false);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
-  const [betAmount, setBetAmount] = useState(10);
-  const [isBetting, setIsBetting] = useState(false);
+  const [poolAmount, setPoolAmount] = useState<number>(0);
+  const latestPrice = useLatestPiPrice();
 
-
+  // 获取开盘价
   const fetchKlineData = async () => {
     try {
       const res = await fetch('/api/kline');
-      if (!res.ok) throw new Error('Network error');
+      if (!res.ok) throw new Error('Failed to fetch Kline data');
       const data = await res.json();
-      setLatestPrice(data.close);
-      setOpenPrice(data.open);
-    } catch (error) {
-      console.error('Kline fetch failed:', error);
+      if (openPrice === null) setOpenPrice(data.open);
+    } catch (err) {
+      console.error('Kline fetch error:', err);
     }
   };
 
-  useEffect(() => {
-    fetchKlineData();
-    const interval = setInterval(fetchKlineData, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // 获取奖池金额
+  const fetchPoolAmount = async () => {
+    try {
+      const amount = await getPoolAmount(period);
+      setPoolAmount(amount);
+    } catch (err) {
+      console.error("获取奖池失败", err);
+    }
+  };
 
+  // 获取用户最新积分（从 Firestore）
+  const fetchLatestUserPoints = async () => {
+    if (!user?.uid) return;
+    try {
+      const docSnap = await getDoc(doc(db, "users", user.uid));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUserPoints(data.points || 0);
+      }
+    } catch (err) {
+      console.error("获取用户积分失败", err);
+    }
+  };
+
+  // 每期初始化
+  useEffect(() => {
+    setTimeLeft(300);
+    setDrawTriggered(false);
+    setOpenPrice(null);
+    setClosePrice(null);
+    fetchKlineData();
+    fetchPoolAmount();
+    const interval = setInterval(() => {
+      fetchKlineData();
+      fetchPoolAmount();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [period]);
+
+  // 倒计时逻辑
   useEffect(() => {
     if (timeLeft <= 0) return;
     const timer = setInterval(() => {
@@ -47,14 +85,26 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  // 开奖逻辑（只触发一次）
   useEffect(() => {
-    if (timeLeft === 0 && !drawTriggered && latestPrice && openPrice) {
+    if (timeLeft === 0 && !drawTriggered && latestPrice && openPrice !== null) {
       setDrawTriggered(true);
-      drawAndSettle(period, openPrice, latestPrice);
-      setShowEasterEgg(true);
-      setTimeout(() => setShowEasterEgg(false), 10000);
+      setClosePrice(latestPrice); // 固定收盘价
+      drawAndSettle(period, openPrice, latestPrice)
+        .then(() => {
+          setShowEasterEgg(true);
+          setTimeout(() => setShowEasterEgg(false), 10000);
+          fetchLatestUserPoints(); // 更新积分
+          fetchPoolAmount();
+          setUserPoints(user?.points || 0);
+          // 自动切换到下一期（延迟几秒避免动画冲突）
+    setTimeout(() => {
+      onPeriodEnd();  // ✅ 通知父组件切换期号
+    }, 2000);
+        })
+        .catch(err => console.error("开奖失败", err));
     }
-  }, [timeLeft, drawTriggered, latestPrice, openPrice, period]);
+  }, [timeLeft, drawTriggered, latestPrice, openPrice, period, user]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -77,7 +127,8 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
     try {
       await placeBet(user.uid, period, direction, amount, user.invitedBy);
       alert(`成功投注 ${amount} Pi（买${direction === 'up' ? '涨' : '跌'}）`);
-      setUserPoints(prev => prev - amount); // 本地扣除积分
+      setUserPoints(prev => prev - amount);
+      fetchPoolAmount();
     } catch (err: any) {
       alert("投注失败：" + err.message);
     }
@@ -85,7 +136,6 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
 
   return (
     <div className="relative">
-      {/* 彩蛋弹窗 */}
       {showEasterEgg && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-yellow-100 border-2 border-yellow-500 p-4 rounded shadow-lg text-center text-lg font-bold text-yellow-800 animate-bounce">
           🎉 开奖啦！请查看结果！🎉
@@ -93,8 +143,6 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
       )}
 
       <div className="rounded-[30px] bg-gradient-to-br from-pink-200 via-purple-100 to-yellow-100 p-5 border-[3px] border-pink-400 shadow-[0_10px_30px_rgba(255,140,255,0.4)] hover:shadow-pink-500/60 transition-shadow duration-300 text-gray-800">
-        
-        {/* 顶部 */}
         <div className="flex justify-between items-center mb-4">
           <span className="text-sm font-bold text-purple-800">期号：{period}</span>
           <div className="flex items-center gap-4">
@@ -103,7 +151,6 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
           </div>
         </div>
 
-        {/* 进度条（最后60秒才显示） */}
         <div className="w-full bg-white/70 rounded-full h-2.5 mb-4">
           <div
             className="bg-pink-400 h-2.5 rounded-full transition-all duration-1000"
@@ -111,7 +158,6 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
           />
         </div>
 
-        {/* 买涨按钮 */}
         <div className="flex justify-between items-center mb-2 px-6">
           <div className="w-full h-20 bg-green-100 rounded-t-full flex items-center justify-between px-6 shadow-md">
             <span className="text-green-800 text-lg font-bold">UP</span>
@@ -124,17 +170,21 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
           </div>
         </div>
 
-        {/* 中间价格信息 */}
         <div className="relative h-28 bg-gradient-to-br from-[#2e2e47] to-[#3c3c5a] border-[3px] border-dashed border-purple-400 rounded-lg p-4 mb-3 shadow-xl cartoon-border">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('/bubble-bg.png')] bg-cover opacity-10 rounded-lg z-0" />
           <div className="relative z-10 space-y-1">
-            <div className="text-sm text-white">收盘价：<span className="text-yellow-400 font-bold">{latestPrice ?? '加载中...'}</span></div>
-            <div className="text-sm text-white">奖池总金额：<span className="text-green-400 font-bold">666</span></div>
-            <div className="text-sm text-white">开盘价：<span className="text-blue-400 font-bold">{openPrice ?? '加载中...'}</span></div>
+            <div className="text-sm text-white">
+              收盘价：<span className="text-yellow-400 font-bold">{closePrice ?? '开奖中...'}</span>
+            </div>
+            <div className="text-sm text-white">
+              奖池总金额：<span className="text-green-400 font-bold">{poolAmount}</span>
+            </div>
+            <div className="text-sm text-white">
+              开盘价：<span className="text-blue-400 font-bold">{openPrice ?? '加载中...'}</span>
+            </div>
           </div>
         </div>
 
-        {/* 买跌按钮 */}
         <div className="flex justify-between items-center mt-1 px-6">
           <div className="w-full h-20 bg-red-100 rounded-b-full flex items-center justify-between px-6 shadow-md">
             <span className="text-red-800 text-lg font-bold">DOWN</span>
@@ -146,7 +196,6 @@ const CurrentCard = ({ period, user }: { period: string; user: any }) => {
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

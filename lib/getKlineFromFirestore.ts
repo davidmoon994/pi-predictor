@@ -6,7 +6,7 @@ import {
   getDocs,
   query,
   orderBy,
-  limit
+  limit,
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -18,47 +18,39 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-
-// ✅ 只初始化一次 Firebase 应用
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/**
- * 获取最近 50 条 K 线数据（升序）
- * 返回数据应包含：timestamp、open、high、low、close、volume 等字段
- */
-export async function getKlineFromFirestore() {
-  const q = query(
-    collection(db, 'kline'),
-    orderBy('timestamp', 'desc'),
-    limit(50)
-  );
-
-  const querySnapshot = await getDocs(q);
-  const data: any[] = [];
-
-  querySnapshot.forEach((doc) => {
-    data.push(doc.data());
-  });
-
-  return data.reverse(); // 以时间升序返回，便于图表渲染
+export async function getLatestPriceFromFirestore(): Promise<number | null> {
+  const data = await getKlineFromFirestore();
+  return data?.[data.length - 1]?.close ?? null;
 }
 
-/**
- * 获取最新一条缓存的 K 线数据（可用于判断更新）
- */
-export async function getCachedKlineData() {
-  const q = query(
-    collection(db, 'kline'),
-    orderBy('timestamp', 'desc'),
-    limit(1)
-  );
 
-  const querySnapshot = await getDocs(q);
+export const getKlineFromFirestore = async () => {
+  try {
+    const snapshot = await getDocs(
+      query(collection(db, 'kline'), orderBy('timestamp', 'desc'), limit(50))
+    );
 
-  if (!querySnapshot.empty) {
-    return querySnapshot.docs[0].data();
-  } else {
-    throw new Error('No kline data found in Firestore');
+    const docs = snapshot.docs.map((doc) => doc.data());
+
+    if (!docs.length) return [];
+
+    const rawArray = docs[0].data;
+    console.log('📦 Firestore 返回的数据结构:', docs[0]);
+    console.log('📦 rawArray 类型:', typeof rawArray, Array.isArray(rawArray));
+
+    // ✅ 清洗数据
+    const cleanedData = rawArray.map((item: any) => ({
+      timestamp: Number(item.timestamp),
+      open: item.open,
+      close: item.close,
+    }));
+
+    return cleanedData;
+  } catch (error) {
+    console.error('❌ 获取 K 线数据失败:', error);
+    return [];
   }
-}
+};

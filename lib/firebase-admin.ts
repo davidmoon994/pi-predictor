@@ -1,17 +1,12 @@
 // lib/firebase-admin.ts
-import admin from 'firebase-admin'
-
-
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
-
+import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-  })
+  });
 }
 
-// ✅ 统一导出为 db
-const db = admin.firestore()
-export { db }
-
+export const db = admin.firestore();

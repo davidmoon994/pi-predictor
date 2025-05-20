@@ -3,32 +3,23 @@ import { db } from './firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 export async function getPiPredictions() {
-  try {
-    const q = query(
-      collection(db, 'kline'),
-      orderBy('timestamp', 'desc'),
-      limit(20) // 取最近 20 条，用于图表展示
-    );
+  const doc = await db.collection('kline').doc('latest').get();
+  if (!doc.exists) throw new Error('❌ 没有找到 K 线数据');
 
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      console.error('没有找到 K 线数据');
-      return [];
-    }
+  const rawData = doc.data()?.data;
+  if (!rawData || !Array.isArray(rawData)) throw new Error('❌ Firestore 中 K 线数据格式错误');
 
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        timestamp: data.timestamp,
-        open: data.open,
-        close: data.close,
-        high: data.high,
-        low: data.low,
-        volume: data.volume,
-      };
-    });
-  } catch (error) {
-    console.error('获取 Pi 预测数据失败', error);
-    return [];
-  }
+  // 这里确保所有字段都是数字，防止不一致
+  const klineData = rawData.map((item: any) => ({
+    timestamp: Number(item.timestamp),
+    open: Number(item.open),
+    high: Number(item.high),
+    low: Number(item.low),
+    close: Number(item.close),
+    volume: Number(item.volume),
+    quoteVolume: Number(item.quoteVolume),
+    isClosed: item.isClosed === true || item.isClosed === 'true',
+  }));
+
+  return klineData;
 }
