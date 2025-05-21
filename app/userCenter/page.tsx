@@ -1,55 +1,73 @@
-// app/userCenter/page.tsx
 'use client';
 
-import React from 'react';
-import { UserData, CommissionData, BetRecord } from '@lib/authService';
+import { useState } from 'react';
+import UserCenterClient from './UserCenterClient';
 import PersonalCard from './PersonalCard';
 import ClientsCard from './ClientsCard';
 import CommissionsCard from './CommissionCard';
 import InviteCard from './InviteCard';
 import WalletCard from './WalletCard';
 import BetsCard from './BetsCard';
+import { UserData, CommissionData, BetRecord } from '@lib/authService';
 import './userCenter.css';
 
-interface Props {
-  userData: UserData;
-  referrals: UserData[];
-  secondLevelUsers: UserData[];
-  commissions: CommissionData[];
-  bets: BetRecord[];
-}
+export default function UserCenterPage() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [referrals, setReferrals] = useState<UserData[]>([]);
+  const [secondLevelUsers, setSecondLevelUsers] = useState<UserData[]>([]);
+  const [commissions, setCommissions] = useState<CommissionData[]>([]);
+  const [bets, setBets] = useState<BetRecord[]>([]);
 
-const UserCenterPage: React.FC<Props> = ({
-  userData,
-  referrals,
-  secondLevelUsers,
-  commissions,
-  bets,
-}) => {
+  const handleDataLoad = (data: {
+    userData: UserData;
+    referrals: UserData[];
+    secondLevelUsers: UserData[];
+    commissions: CommissionData[];
+    bets: BetRecord[];
+  }) => {
+    setUserData(data.userData);
+    setReferrals(data.referrals);
+    setSecondLevelUsers(data.secondLevelUsers);
+    setCommissions(data.commissions);
+    setBets(data.bets);
+  };
+
+  const isReady = userData !== null;
+
   return (
-    <div className="user-center">
-      <div className="content grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="postcard">
-          <PersonalCard userData={userData} referrals={referrals} secondLevelUsers={secondLevelUsers} commissions={commissions} />
-        </div>
-        <div className="postcard">
-          <ClientsCard referrals={referrals} secondLevelUsers={secondLevelUsers} />
-        </div>
-        <div className="postcard">
-          <CommissionsCard commissions={commissions} />
-        </div>
-        <div className="postcard">
-          <InviteCard userData={userData} />
-        </div>
-        <div className="postcard">
-          <WalletCard userData={userData} />
-        </div>
-        <div className="postcard">
-          <BetsCard bets={bets} />
-        </div>
+    <>
+      <UserCenterClient onData={handleDataLoad} />
+      <div className="user-center">
+        {isReady ? (
+          <div className="content grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="postcard">
+              <PersonalCard
+                userData={userData}
+                referrals={referrals}
+                secondLevelUsers={secondLevelUsers}
+                commissions={commissions}
+              />
+            </div>
+            <div className="postcard">
+              <ClientsCard referrals={referrals} secondLevelUsers={secondLevelUsers} />
+            </div>
+            <div className="postcard">
+              <CommissionsCard commissions={commissions} />
+            </div>
+            <div className="postcard">
+              <InviteCard userData={userData} />
+            </div>
+            <div className="postcard">
+              <WalletCard userId={userData.uid} points={userData.points} />
+            </div>
+            <div className="postcard">
+              <BetsCard bets={bets} />
+            </div>
+          </div>
+        ) : (
+          <div className="text-white p-6">加载中...</div>
+        )}
       </div>
-    </div>
+    </>
   );
-};
-
-export default UserCenterPage;
+}

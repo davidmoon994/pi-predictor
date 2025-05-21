@@ -1,7 +1,8 @@
+//app/userCenter/BetsCard.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { db } from '@lib/firebase';
+import { auth, db } from '@lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
 const BetRecordCard = () => {

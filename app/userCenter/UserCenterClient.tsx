@@ -1,0 +1,64 @@
+//app/userCenter/UserCenterClient.tsx
+'use client';
+
+import { useEffect } from 'react';
+import { auth, db } from '@lib/firebase';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { UserData, CommissionData, BetRecord } from '@lib/authService';
+
+interface Props {
+  onData: (params: {
+    userData: UserData;
+    referrals: UserData[];
+    secondLevelUsers: UserData[];
+    commissions: CommissionData[];
+    bets: BetRecord[];
+  }) => void;
+}
+
+const UserCenterClient = ({ onData }: Props) => {
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) return;
+
+      // 获取当前用户数据
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return;
+
+      const userInfo = { uid: user.uid, ...userSnap.data() } as UserData;
+
+      // 获取一级客户（直接邀请）
+      const refQuery = query(collection(db, 'users'), where('invitedBy', '==', userInfo.inviteCode));
+      const refSnap = await getDocs(refQuery);
+      const refUsers = refSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })) as UserData[];
+
+      // 获取二级客户（一级客户邀请的客户）
+      const secondLevelResults = await Promise.all(refUsers.map(async r => {
+        const q = query(collection(db, 'users'), where('invitedBy', '==', r.inviteCode));
+        const snap = await getDocs(q);
+        return snap.docs.map(doc => ({ uid: doc.id, ...doc.data() })) as UserData[];
+      }));
+      const secondLevelUsers = secondLevelResults.flat();
+
+      // 获取佣金记录
+      const commissionQuery = query(collection(db, 'commissions'), where('toUserId', '==', user.uid));
+      const commissionSnap = await getDocs(commissionQuery);
+      const commissions = commissionSnap.docs.map(doc => doc.data() as CommissionData);
+
+      // 获取投注记录
+      const betQuery = query(collection(db, 'bets'), where('userId', '==', user.uid));
+      const betSnap = await getDocs(betQuery);
+      const bets = betSnap.docs.map(doc => doc.data() as BetRecord);
+
+      // 传递给page.tsx
+      onData({ userData: userInfo, referrals: refUsers, secondLevelUsers, commissions, bets });
+    });
+
+    return () => unsubscribe();
+  }, [onData]);
+
+  return null;
+};
+
+export default UserCenterClient;

@@ -1,5 +1,5 @@
 // app/api/fetch-kline/route.ts
-import { fetchAndCacheKlinesFromGate } from '../../../lib/fetchAndCacheKline';
+import { fetchAndCacheKlinesFromGate }  from '../../../lib/fetchAndCacheKline';
 import { db } from '../../../lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
