@@ -1,4 +1,4 @@
-import { getKlineFromFirestore } from '@lib/getKlineFromFirestore'; // Firestore 数据获取
+import { getKlineFromFirestore } from '../lib/getKlineFromFirestore'; // Firestore 数据获取
 
 // K线数据接口
 export interface KlineData {
