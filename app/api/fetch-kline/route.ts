@@ -3,7 +3,11 @@ import { fetchAndCacheKlinesFromGate } from '@lib/fetchAndCacheKline';
 import { getFirestore } from '@lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const CACHE_TTL_MS = 60 * 1000; // 60 秒缓存时间
+
+
 
 export async function GET() {
   console.log('🔥 FIREBASE_SERVICE_ACCOUNT_BASE64 前 30 字符：', process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.slice(0, 30));
