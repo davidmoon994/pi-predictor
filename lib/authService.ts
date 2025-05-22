@@ -16,6 +16,39 @@ import {
 import { auth, db } from './firebase';
 import QRCode from 'qrcode';
 
+export type UserData = {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  inviterId?: string;
+  createdAt?: number;
+  points?: number;
+  inviteCode?: string; // ✅ 添加这一行
+  avatarUrl?: string;
+};
+
+export type Commission = {
+  id: string;
+  userId: string;
+  sourceUserId: string;
+  fromUserName?: string;
+  amount: number;
+  type: 'level1' | 'level2';
+  timestamp: number;
+};
+
+
+export type BetRecord = {
+  userId: string;
+  period: string;
+  amount: number;
+  selection: 'up' | 'down'; // 加上这个字段
+  result?: 'win' | 'lose' | 'draw';
+  profit?: number;
+  timestamp: number; // 👈 添加这一行
+};
+
+
 // 注册函数
 export async function registerUser(
   email: string,

@@ -10,6 +10,9 @@ import {
   TimeScale,
   Tooltip,
   Legend,
+  ChartOptions,
+  ChartData,
+  registerables,
 } from "chart.js";
 import { Chart } from "react-chartjs-2";
 import {
@@ -19,29 +22,27 @@ import {
 import "chartjs-adapter-date-fns";
 
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  TimeScale,
-  BarElement,
-  Tooltip,
-  Legend,
+  ...registerables,
   CandlestickController,
   CandlestickElement
 );
 
-export default function KLineChart({ data = [], currentPrice = "" }) {
+type KLineProps = {
+  data: any[];
+  currentPrice?: string;
+};
+
+export default function KLineChart({ data = [], currentPrice = "" }: KLineProps) {
   const [isZoomReady, setIsZoomReady] = useState(false);
 
   useEffect(() => {
-    // 动态导入 zoom 插件，避免 SSR 错误
     import("chartjs-plugin-zoom").then((zoomPluginModule) => {
-      const zoomPlugin = zoomPluginModule.default;
-      ChartJS.register(zoomPlugin);
+      ChartJS.register(zoomPluginModule.default);
       setIsZoomReady(true);
     });
   }, []);
 
-  if (!isZoomReady) return null; // 或者 return <Loading />
+  if (!isZoomReady) return null;
 
   const candleData = data.map((item: any) => ({
     x: item.timestamp * 1000,
@@ -71,7 +72,7 @@ export default function KLineChart({ data = [], currentPrice = "" }) {
         borderDownColor: "#ff3b30",
         wickColor: "#ffffff",
         borderWidth: 1.5,
-      },
+      } as any, // ✅ 避免类型限制
       {
         label: "成交量",
         type: "bar",
@@ -85,7 +86,7 @@ export default function KLineChart({ data = [], currentPrice = "" }) {
     ],
   };
 
-  const options = {
+  const options: ChartOptions<"candlestick"> = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: {

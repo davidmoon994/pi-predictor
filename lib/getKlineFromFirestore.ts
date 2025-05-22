@@ -1,5 +1,5 @@
 // lib/getKlineFromFirestore.ts
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getFirestore,
   collection,
@@ -7,7 +7,9 @@ import {
   query,
   orderBy,
   limit,
-} from 'firebase/firestore';
+  doc,
+  getDoc,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -21,36 +23,46 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export async function getLatestPriceFromFirestore(): Promise<number | null> {
-  const data = await getKlineFromFirestore();
-  return data?.[data.length - 1]?.close ?? null;
+// ✅ 根据期号获取指定 K 线数据
+export async function getKlineFromFirestore(periodId: string): Promise<{
+  timestamp: number;
+  open: number;
+  close: number;
+} | null> {
+  try {
+    const docRef = doc(db, "kline", periodId);
+    const snap = await getDoc(docRef);
+
+    if (!snap.exists()) return null;
+
+    const data = snap.data();
+    return {
+      timestamp: Number(data.timestamp),
+      open: Number(data.open),
+      close: Number(data.close),
+    };
+  } catch (err) {
+    console.error("❌ 获取指定期号 K 线数据失败:", err);
+    return null;
+  }
 }
 
-
-export const getKlineFromFirestore = async () => {
+// ✅ 获取最近一条 K 线的收盘价
+export async function getLatestPriceFromFirestore(): Promise<number | null> {
   try {
-    const snapshot = await getDocs(
-      query(collection(db, 'kline'), orderBy('timestamp', 'desc'), limit(50))
+    const klineQuery = query(
+      collection(db, "kline"),
+      orderBy("timestamp", "desc"),
+      limit(1)
     );
+    const snapshot = await getDocs(klineQuery);
 
-    const docs = snapshot.docs.map((doc) => doc.data());
+    if (snapshot.empty) return null;
 
-    if (!docs.length) return [];
-
-    const rawArray = docs[0].data;
-    console.log('📦 Firestore 返回的数据结构:', docs[0]);
-    console.log('📦 rawArray 类型:', typeof rawArray, Array.isArray(rawArray));
-
-    // ✅ 清洗数据
-    const cleanedData = rawArray.map((item: any) => ({
-      timestamp: Number(item.timestamp),
-      open: item.open,
-      close: item.close,
-    }));
-
-    return cleanedData;
+    const latestData = snapshot.docs[0].data();
+    return Number(latestData.close) || null;
   } catch (error) {
-    console.error('❌ 获取 K 线数据失败:', error);
-    return [];
+    console.error("❌ 获取最新 K 线收盘价失败:", error);
+    return null;
   }
-};
+}

@@ -22,11 +22,12 @@ export async function placeBet(
 ) {
   const userRef = doc(db, "users", userId);
   const userSnap = await getDoc(userRef);
-  const userData = userSnap.data();
+  const userData = userSnap.exists() ? userSnap.data() : null;
 
-  if (!userSnap.exists() || userData.points < amount) {
-    throw new Error("用户不存在或积分不足");
-  }
+if (!userData || userData.points < amount) {
+  throw new Error("用户不存在或积分不足");
+}
+
 
   // 扣除积分
   await updateDoc(userRef, {
@@ -34,7 +35,8 @@ export async function placeBet(
   });
 
   // 更新奖池
-  await updatePoolAfterBet(period, amount, direction);
+  await updatePoolAfterBet(period, direction, amount);
+
 
   // 写入下注记录
   await addDoc(collection(db, "bets"), {

@@ -1,5 +1,5 @@
 // app/api/fetch-kline/route.ts
-import { fetchAndCacheKlinesFromGate }  from '../../../lib/fetchAndCacheKline';
+import { fetchAndCacheKlinesFromGate } from '@lib/fetchAndCacheKline';
 import { db } from '../../../lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
@@ -12,14 +12,19 @@ export async function GET() {
     if (klineDoc.exists) {
       const cachedData = klineDoc.data();
 
-      const now = Date.now();
-      const lastUpdated = cachedData.timestamp?.toMillis?.() ?? new Date(cachedData.timestamp).getTime();
+      if (cachedData?.data && cachedData?.timestamp) {
+        const now = Date.now();
+        const lastUpdated =
+          typeof cachedData.timestamp.toMillis === 'function'
+            ? cachedData.timestamp.toMillis()
+            : new Date(cachedData.timestamp).getTime();
 
-      const isExpired = now - lastUpdated > CACHE_TTL_MS;
+        const isExpired = now - lastUpdated > CACHE_TTL_MS;
 
-      if (!isExpired && cachedData.data) {
-        console.log('✅ 使用缓存的 K 线数据');
-        return NextResponse.json(cachedData.data);
+        if (!isExpired) {
+          console.log('✅ 使用缓存的 K 线数据');
+          return NextResponse.json(cachedData.data);
+        }
       }
     }
 

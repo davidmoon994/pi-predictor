@@ -38,12 +38,13 @@ export default function EasterEgg() {
           }}
         />
       ))}
-      <style jsx>{`
-        @keyframes float {
-          0% { transform: translateY(0px); opacity: 1; }
-          100% { transform: translateY(-50px); opacity: 0; }
-        }
-      `}</style>
+      <style>{`
+  @keyframes float {
+    0% { transform: translateY(0px); opacity: 1; }
+    100% { transform: translateY(-50px); opacity: 0; }
+  }
+`}</style>
+
     </div>
   );
 }

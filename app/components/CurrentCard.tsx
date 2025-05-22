@@ -8,6 +8,22 @@ import { getDoc, doc } from "firebase/firestore";
 import { db } from "@lib/firebase";
 import EasterEgg from "@/components/effects/EasterEgg";
 import { useLatestPiPrice } from '@/hooks/useLatestPiPrice';
+import React from "react";
+
+type User = {
+  uid: string;
+  displayName: string;
+  email?: string;
+};
+
+type Props = {
+  period: string;
+  user: User | null;
+  onPeriodEnd: () => void;
+};
+
+// 组件逻辑继续...
+
 
 const CurrentCard = ({ period, user, onPeriodEnd}: { period: string; user: any ;onPeriodEnd: () => void }) => {
   const [timeLeft, setTimeLeft] = useState(300);
@@ -127,7 +143,7 @@ const CurrentCard = ({ period, user, onPeriodEnd}: { period: string; user: any ;
     try {
       await placeBet(user.uid, period, direction, amount, user.invitedBy);
       alert(`成功投注 ${amount} Pi（买${direction === 'up' ? '涨' : '跌'}）`);
-      setUserPoints(prev => prev - amount);
+      setUserPoints((prev: number) => prev - amount);
       fetchPoolAmount();
     } catch (err: any) {
       alert("投注失败：" + err.message);

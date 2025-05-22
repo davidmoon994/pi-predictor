@@ -1,4 +1,5 @@
 //app/components/CardSlider.tsx
+"use client";
 import { useRef, useState, useEffect } from "react";
 import PastCard from "./PastCard";
 import CurrentCard from "./CurrentCard";
@@ -6,7 +7,20 @@ import NextCard from "./NextCard";
 import UpcomingCard from "./UpcomingCard";
 import { drawAndSettle } from '@lib/drawService';
 
-const CardSlider = () => {
+// ✅ 定义接收的 Props 类型
+type User = {
+  uid: string;
+  displayName: string;
+  email?: string;
+};
+
+type CardSliderProps = {
+  user: User | null;
+  onPeriodEnd: () => void;
+};
+
+// ✅ 接收 props
+const CardSlider = ({ user, onPeriodEnd }: CardSliderProps) => {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [scrollIndex, setScrollIndex] = useState(0);
   const [openPrice, setOpenPrice] = useState<number | null>(null);
@@ -17,14 +31,12 @@ const CardSlider = () => {
 
   const cardWidth = 280;
 
-  // ✅ 自动推进期数
   const goToNextPeriod = () => {
     const nextPeriod = (parseInt(periodId) + 1).toString();
     setPeriodId(nextPeriod);
-    setTimeLeft(300); // 重置倒计时
+    setTimeLeft(300);
   };
 
-  // ✅ 获取收盘价
   const fetchKlineData = async () => {
     try {
       const response = await fetch('/api/kline');
@@ -52,12 +64,12 @@ const CardSlider = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // ✅ 倒计时与开奖逻辑
   useEffect(() => {
     if (timeLeft <= 0) {
       if (openPrice !== null && closePrice !== null) {
         drawAndSettle(periodId, openPrice, closePrice).then(() => {
-          goToNextPeriod(); // 开奖后自动切换期数
+          goToNextPeriod();
+          onPeriodEnd(); // ✅ 通知父组件开奖已完成
         });
       }
     }
@@ -69,7 +81,6 @@ const CardSlider = () => {
     return () => clearInterval(timer);
   }, [timeLeft, openPrice, closePrice, periodId]);
 
-  // ✅ 页面加载时自动滑动到最右
   useEffect(() => {
     const slider = sliderRef.current;
     if (slider) {
@@ -95,14 +106,12 @@ const CardSlider = () => {
     }
   };
 
-  // ✅ 构造近期历史卡片
   const pastPeriods = Array.from({ length: 10 }, (_, i) =>
     (parseInt(periodId) - 10 + i).toString()
   );
 
   return (
     <div className="relative w-full">
-      {/* 滑动区域 */}
       <div
         ref={sliderRef}
         className="w-full overflow-x-scroll whitespace-nowrap flex items-start gap-4 px-4 pb-2 scroll-smooth scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"
@@ -115,7 +124,11 @@ const CardSlider = () => {
         ))}
 
         <div className="inline-block w-[260px] shrink-0">
-          <CurrentCard period={periodId} />
+          <CurrentCard
+            period={periodId}
+            user={user}
+            onPeriodEnd={onPeriodEnd}
+          />
         </div>
 
         <div className="inline-block w-[260px] shrink-0">

@@ -1,12 +1,12 @@
-'use client'
-import React, { Suspense } from 'react'
-import RegisterPage from './page' // 引入 RegisterPage 组件
+//app/register/RegisterPageWrapper.tsx
+'use client';
+import React, { Suspense } from 'react';
+import RegisterClient from './RegisterClient'; // 下一步我们创建这个文件
 
 export default function RegisterPageWrapper() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <RegisterPage />
+      <RegisterClient />
     </Suspense>
-  )
+  );
 }
-

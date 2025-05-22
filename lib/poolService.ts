@@ -1,4 +1,5 @@
 import { db } from './firebase';
+import { getCurrentPeriodId } from './utils';
 import {
   doc,
   getDoc,
@@ -13,7 +14,7 @@ import {
 import { drawAndSettle } from './drawService';
 import { getKlineFromFirestore } from './getKlineFromFirestore';
 import triggerEasterEggIfNeeded  from '@/components/effects/EasterEgg'; // 可选
-import { getLatestPiPrice } from '@/hooks/useLatestPiPrice'; // 可选
+import {useLatestPiPrice } from '@/hooks/useLatestPiPrice'; // 可选
 
 // 获取某一期奖池总金额
 export const getPoolAmount = async (period: string): Promise<number> => {
@@ -110,11 +111,11 @@ export const resolvePool = async (periodId: string) => {
   if (pool.resolved) throw new Error('已结算');
 
   // 获取该期K线数据用于判断涨跌
-  const kline = await getKlineFromFirestore(periodId);
+  const kline = await getKlineFromFirestore(periodId); // ✅ 直接使用传入的 periodId
   if (!kline) throw new Error('找不到该期的K线数据');
 
-  const open = parseFloat(kline.open);
-  const close = parseFloat(kline.close);
+  const open = Number(kline.open);
+  const close = Number(kline.close);
   const winningDirection = close > open ? 'up' : 'down';
 
   // 获取下注记录
@@ -151,9 +152,10 @@ export const resolvePool = async (periodId: string) => {
   });
 
   // 分润积分 + 记录到 commissions
-  await drawAndSettle(periodId);
+  await drawAndSettle(periodId, open, close); // ✅ 传入开盘和收盘价格
+
+
 
   // 可选触发彩蛋
-  await triggerEasterEggIfNeeded?.(periodId, winningDirection);
+  await triggerEasterEggIfNeeded?.();
 };
-

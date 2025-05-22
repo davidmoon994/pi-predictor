@@ -8,28 +8,38 @@ import CommissionsCard from './CommissionCard';
 import InviteCard from './InviteCard';
 import WalletCard from './WalletCard';
 import BetsCard from './BetsCard';
-import { UserData, CommissionData, BetRecord } from '@lib/authService';
+import { UserData, BetRecord } from '@lib/authService';
 import './userCenter.css';
+
+type Commission = {
+  id: string;
+  userId: string;
+  sourceUserId: string;
+  fromUserName?: string;
+  amount: number;
+  type: 'level1' | 'level2';
+  timestamp: number;
+};
 
 export default function UserCenterPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [referrals, setReferrals] = useState<UserData[]>([]);
   const [secondLevelUsers, setSecondLevelUsers] = useState<UserData[]>([]);
-  const [commissions, setCommissions] = useState<CommissionData[]>([]);
   const [bets, setBets] = useState<BetRecord[]>([]);
+  const [commissions, setCommissions] = useState<Commission[]>([]); // ✅ 添加
 
   const handleDataLoad = (data: {
     userData: UserData;
     referrals: UserData[];
     secondLevelUsers: UserData[];
-    commissions: CommissionData[];
     bets: BetRecord[];
+    commissions: Commission[]; // ✅ 添加
   }) => {
     setUserData(data.userData);
     setReferrals(data.referrals);
     setSecondLevelUsers(data.secondLevelUsers);
-    setCommissions(data.commissions);
     setBets(data.bets);
+    setCommissions(data.commissions); // ✅ 添加
   };
 
   const isReady = userData !== null;
@@ -45,7 +55,7 @@ export default function UserCenterPage() {
                 userData={userData}
                 referrals={referrals}
                 secondLevelUsers={secondLevelUsers}
-                commissions={commissions}
+                commissions={commissions} // ✅ 添加
               />
             </div>
             <div className="postcard">
@@ -58,7 +68,7 @@ export default function UserCenterPage() {
               <InviteCard userData={userData} />
             </div>
             <div className="postcard">
-              <WalletCard userId={userData.uid} points={userData.points} />
+              <WalletCard userId={userData.uid} points={userData.points ?? 0} />
             </div>
             <div className="postcard">
               <BetsCard bets={bets} />
