@@ -1,12 +1,15 @@
 // app/api/fetch-kline/route.ts
 import { fetchAndCacheKlinesFromGate } from '@lib/fetchAndCacheKline';
-import { db } from '../../../lib/firebase-admin';
+import { getFirestore } from '@lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
 const CACHE_TTL_MS = 60 * 1000; // 60 秒缓存时间
 
 export async function GET() {
+  console.log('🔥 FIREBASE_SERVICE_ACCOUNT_BASE64 前 30 字符：', process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.slice(0, 30));
+
   try {
+    const db = getFirestore();
     const klineDoc = await db.collection('kline').doc('latest').get();
 
     if (klineDoc.exists) {
