@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getLatestKlines } from '../../../lib/klineService';
 
+
 export async function GET() {
   const data = await getLatestKlines();
 
