@@ -1,6 +1,8 @@
 //lib/fetchAndCacheKline.ts
 import https from 'https';
-import { db } from './firebase-admin';
+import { getFirestore } from '@lib/firebase-admin';
+
+const db = getFirestore();
 
 export async function fetchAndCacheKlinesFromGate(): Promise<any[]> {
   const url = 'https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=50';

@@ -1,10 +1,12 @@
 // lib/klineService.ts
-import { db } from './firebase-admin';
+import { getFirestore } from '@lib/firebase-admin';
 
 export async function getLatestKlines(): Promise<any[] | null> {
   try {
+    const db = getFirestore();
     const docRef = db.collection('kline').doc('latest');
     const docSnap = await docRef.get();
+    
 
     if (docSnap.exists) {
       const data = docSnap.data();
