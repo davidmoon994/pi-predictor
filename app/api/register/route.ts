@@ -1,6 +1,5 @@
 // app/api/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { registerUser } from "@lib/authService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +9,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "缺少必要字段" }, { status: 400 });
     }
 
+    // ✅ 延迟导入
+    const { registerUser } = await import("@lib/authService");
     const user = await registerUser(email, password, displayName);
 
     return NextResponse.json({
