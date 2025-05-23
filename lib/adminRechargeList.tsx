@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getPendingTransactions, approveTransaction } from '@/lib/adminService';
+import { getPendingTransactions, approveTransaction } from '../lib/adminService';
 
 type Transaction = {
   id: string;

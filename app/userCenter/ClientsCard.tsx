@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { UserData } from '@lib/authService';
+import { UserData } from '@lib/types';
 
 type Props = {
   referrals: UserData[];

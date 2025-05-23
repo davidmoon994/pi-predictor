@@ -4,7 +4,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { auth, db } from '@lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { UserData, Commission } from '@lib/authService';
+import { UserData, Commission } from '@lib/types';
 
 type Props = {
   userData: UserData;

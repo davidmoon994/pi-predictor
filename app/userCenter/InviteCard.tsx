@@ -1,7 +1,7 @@
 // app/userCenter/InviteCard.tsx
 'use client';
 import React, { useEffect, useState } from 'react';
-import { UserData } from '@lib/authService';
+import { UserData } from '@lib/types';
 import { auth, db } from '@lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';

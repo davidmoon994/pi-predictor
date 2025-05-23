@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { auth, db } from '@lib/firebase';
-import { BetRecord } from '@lib/authService';
+import type { BetRecord } from '@lib/types';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
 type Props = {

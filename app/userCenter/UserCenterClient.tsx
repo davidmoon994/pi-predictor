@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { auth, db } from '@lib/firebase';
 import { Timestamp } from 'firebase/firestore'; // 确保有这一行
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import { UserData,  BetRecord } from '@lib/authService';
+import { UserData,  BetRecord } from '@lib/types';
 
 interface Props {
   onData: (params: {

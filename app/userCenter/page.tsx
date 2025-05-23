@@ -8,7 +8,7 @@ import CommissionsCard from './CommissionCard';
 import InviteCard from './InviteCard';
 import WalletCard from './WalletCard';
 import BetsCard from './BetsCard';
-import { UserData, BetRecord } from '@lib/authService';
+import { UserData, BetRecord } from '@lib/types';
 import './userCenter.css';
 
 type Commission = {
