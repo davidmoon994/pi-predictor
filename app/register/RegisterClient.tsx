@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { registerUser } from '../../lib/authService';
+import { registerUserWithReferral } from '../../lib/registerService'; // ✅ 改为新逻辑
 import './RegisterPage.css';
 
 const RegisterClient = () => {
@@ -20,18 +20,31 @@ const RegisterClient = () => {
 
   useEffect(() => {
     const inviter = searchParams.get('inviter');
-    if (inviter) setInviterId(inviter);
+    if (inviter) {
+      setInviterId(inviter);
+    }
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!inviterId) {
+      alert('必须通过邀请码或专属二维码注册');
+      return;
+    }
+
     if (password !== confirmPassword) {
       alert('两次输入的密码不一致，请重新输入');
       return;
     }
 
     try {
-      const user = await registerUser(email, password, displayName, inviterId || undefined);
+      await registerUserWithReferral({
+        email,
+        password,
+        displayName,
+        inviterCode: inviterId,
+      });
       alert('注册成功！');
       router.push('/');
     } catch (error: any) {
@@ -44,6 +57,12 @@ const RegisterClient = () => {
     <div className="register-container">
       <form className="register-form" onSubmit={handleSubmit}>
         <h2>注册新账号</h2>
+
+        {!inviterId && (
+          <p style={{ color: 'red', marginBottom: '1rem' }}>
+            必须通过邀请链接或二维码注册
+          </p>
+        )}
 
         <label className="input-label">你的邮箱</label>
         <input
@@ -91,13 +110,20 @@ const RegisterClient = () => {
           className="input-field"
         />
 
-        {inviterId && <p className="inviter-id">邀请人 ID: {inviterId}</p>}
+        {inviterId && (
+          <p className="inviter-id">邀请人邀请码: <strong>{inviterId}</strong></p>
+        )}
 
-        <button type="submit" className="submit-btn">注册</button>
+        <button
+          type="submit"
+          className="submit-btn"
+          disabled={!inviterId} // 防止未填邀请码注册
+        >
+          注册
+        </button>
       </form>
     </div>
   );
 };
 
 export default RegisterClient;
-

@@ -47,20 +47,21 @@ export async function getKlineFromFirestore(periodId: string): Promise<{
   }
 }
 
-// ✅ 获取最近一条 K 线的收盘价
+// ✅ 从 'kline/latest' 文档中获取最新价格
 export async function getLatestPriceFromFirestore(token: string = "PI"): Promise<number | null> {
   try {
-    const klineQuery = query(
-      collection(db, `kline-${token}`), // ⬅️ 根据币种动态选择集合，比如 kline-PI / kline-PI-CNY
-      orderBy("timestamp", "desc"),
-      limit(1)
-    );
-    const snapshot = await getDocs(klineQuery);
+    const docRef = doc(db, "kline", "latest");
+    const snap = await getDoc(docRef);
 
-    if (snapshot.empty) return null;
+    if (!snap.exists()) return null;
 
-    const latestData = snapshot.docs[0].data();
-    return Number(latestData.close) || null;
+    const data = snap.data();
+
+    if (!Array.isArray(data.data) || data.data.length === 0) return null;
+
+    // 默认取数组中的第一项作为最新数据
+    const latestItem = data.data[0];
+    return Number(latestItem.close) || null;
   } catch (error) {
     console.error(`❌ 获取 ${token} 最新 K 线收盘价失败:`, error);
     return null;

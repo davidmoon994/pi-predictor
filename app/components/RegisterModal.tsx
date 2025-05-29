@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { registerUser } from "@lib/authService";
+import { registerUser } from "../../lib/authService";
 import { useSearchParams } from "next/navigation";
 
 export default function RegisterModal({ onClose }: { onClose: () => void }) {

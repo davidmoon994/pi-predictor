@@ -1,11 +1,11 @@
-//app/components/RechargeModal.tsx
+//app/components/WithdrawModal.tsx
 'use client';
 
 import { useState } from 'react';
-import { doc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '@lib/firebase';
+import dayjs from 'dayjs';
+import { requestTransaction } from '@lib/userService';
 
-export default function RechargeModal({
+export default function WithdrawModal({
   isOpen,
   onClose,
   userId,
@@ -21,21 +21,18 @@ export default function RechargeModal({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const handleRecharge = async () => {
+  const handleWithdraw = async () => {
     if (!accountId.trim()) return setMessage('请输入您的账户 ID');
     if (amount <= 0) return setMessage('请输入大于 0 的金额');
     setLoading(true);
     try {
-      const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
-        points: increment(amount),
-      });
-      setMessage(`充值成功：${amount} PI`);
+      await requestTransaction(userId, amount, 'withdraw',accountId);
+      setMessage(`提现申请已提交，等待管理员审核`);
       setAmount(0);
       setAccountId('');
       onSuccess?.();
     } catch {
-      setMessage('充值失败，请稍后重试');
+      setMessage('提现申请失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -54,11 +51,11 @@ export default function RechargeModal({
         backgroundPosition: 'top left, top right, bottom left, bottom right',
         backgroundSize: '50% 50%',
         backgroundRepeat: 'no-repeat',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)', // 加深遮罩
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
       }}
     >
       <div className="bg-white bg-opacity-90 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-gray-300 max-w-sm w-full relative">
-        <h2 className="text-xl font-bold mb-4 text-center">充值Pi</h2>
+        <h2 className="text-xl font-bold mb-4 text-center">提现 Pi</h2>
 
         <div className="mb-3">
           <label className="text-sm text-gray-700">平台账户 ID：</label>
@@ -68,15 +65,15 @@ export default function RechargeModal({
         <input
           type="text"
           placeholder="请输入您的账户 ID"
-          className="w-full p-3 rounded-lg border border-gray-300 mb-3 focus:outline-none focus:ring-2 focus:ring-green-400"
+          className="w-full p-3 rounded-lg border border-gray-300 mb-3 focus:outline-none focus:ring-2 focus:ring-red-400"
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
         />
 
         <input
           type="number"
-          placeholder="请输入要充值的Pi数量"
-          className="w-full p-3 rounded-lg border border-gray-300 mb-4 focus:outline-none focus:ring-2 focus:ring-green-400"
+          placeholder="请输入要提现的 PI 数量"
+          className="w-full p-3 rounded-lg border border-gray-300 mb-4 focus:outline-none focus:ring-2 focus:ring-red-400"
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
         />
@@ -89,11 +86,11 @@ export default function RechargeModal({
             取消
           </button>
           <button
-            onClick={handleRecharge}
+            onClick={handleWithdraw}
             disabled={loading}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all transform hover:-translate-y-0.5"
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all transform hover:-translate-y-0.5"
           >
-            {loading ? '提交中...' : '确认充值'}
+            {loading ? '提交中...' : '确认提现'}
           </button>
         </div>
 
