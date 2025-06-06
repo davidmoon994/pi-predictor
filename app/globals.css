@@ -17,8 +17,9 @@
 
 /* 🌍 全局样式 */
 body {
-  @apply bg-gray-900 text-white font-sans;
+  @apply bg-gray-50 text-gray-900 font-sans;
 }
+
 .button-hover {
   @apply transition duration-300 ease-in-out hover:scale-105 shadow-lg;
 }

@@ -1,9 +1,9 @@
-//app/components/WithdrawModal.tsx
+//app/userCenter/components/WithdrawModal.tsx
 'use client';
 
 import { useState } from 'react';
 import dayjs from 'dayjs';
-import { requestTransaction } from '@lib/userService';
+import { requestTransaction } from '../../../lib/userService';
 
 export default function WithdrawModal({
   isOpen,

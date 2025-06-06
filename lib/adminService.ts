@@ -17,38 +17,62 @@ export interface TransactionRecord {
   id: string;
   userId: string;
   amount: number;
-  status: string;
-  createdAt?: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: number;
+  accountId?: string; // ← 添加这个字段
+}
+
+// 辅助函数：将 Firestore doc 转为 TransactionRecord
+function toTransactionRecord(doc: QueryDocumentSnapshot<DocumentData>): TransactionRecord {
+  const data = doc.data();
+  let createdAtNum: number;
+
+  if (data.createdAt?.toMillis) {
+    createdAtNum = data.createdAt.toMillis();
+  } else if (typeof data.createdAt === 'number') {
+    createdAtNum = data.createdAt;
+  } else {
+    createdAtNum = Date.now();
+  }
+
+  return {
+    id: doc.id,
+    userId: data.userId,
+    amount: data.amount,
+    status: data.status,
+    createdAt: createdAtNum,
+    accountId: data.accountId,
+  };
 }
 
 // 获取所有待审核的交易记录（包含充值和提现）
-export async function getPendingTransactions() {
+export async function getPendingTransactions(): Promise<TransactionRecord[]> {
   const snapshot = await getDocs(collection(db, 'transactions'));
   return snapshot.docs
-    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .map(doc => ({ id: doc.id, ...(doc.data() as Omit<TransactionRecord, 'id'>) }))
     .filter(tx => tx.status === 'pending');
 }
 
 // 获取所有待审核的提现申请
-export async function getPendingWithdrawals() {
+export async function getPendingWithdrawals(): Promise<TransactionRecord[]> {
   const q = query(
     collection(db, 'transactions'),
     where('type', '==', 'withdraw'),
     where('status', '==', 'pending')
   );
   const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snap.docs.map(toTransactionRecord);
 }
 
-// 新增：获取所有待审核的充值申请
-export async function getPendingRecharges() {
+// 获取所有待审核的充值申请
+export async function getPendingRecharges(): Promise<TransactionRecord[]> {
   const q = query(
     collection(db, 'transactions'),
     where('type', '==', 'recharge'),
     where('status', '==', 'pending')
   );
   const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snap.docs.map(toTransactionRecord);
 }
 
 // 审核通过：更新交易状态 & 修改用户积分
@@ -108,28 +132,10 @@ export async function getRechargesByStatus(
     where('status', '==', status)
   );
   const snap = await getDocs(q);
-
-  const data = snap.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-    const d = doc.data();
-    let createdAtNum: number | undefined;
-    if (d.createdAt?.toMillis) {
-      createdAtNum = d.createdAt.toMillis();
-    } else if (typeof d.createdAt === 'number') {
-      createdAtNum = d.createdAt;
-    }
-    return {
-      id: doc.id,
-      userId: d.userId,
-      amount: d.amount,
-      status: d.status,
-      createdAt: createdAtNum,
-    };
-  });
-
-  return data;
+  return snap.docs.map(toTransactionRecord);
 }
 
-// 你新需求的函数：根据状态查询提现记录
+// 根据状态查询提现记录
 export async function getWithdrawalsByStatus(
   status: 'pending' | 'approved' | 'rejected'
 ): Promise<TransactionRecord[]> {
@@ -139,23 +145,5 @@ export async function getWithdrawalsByStatus(
     where('status', '==', status)
   );
   const snap = await getDocs(q);
-
-  const data = snap.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-    const d = doc.data();
-    let createdAtNum: number | undefined;
-    if (d.createdAt?.toMillis) {
-      createdAtNum = d.createdAt.toMillis();
-    } else if (typeof d.createdAt === 'number') {
-      createdAtNum = d.createdAt;
-    }
-    return {
-      id: doc.id,
-      userId: d.userId,
-      amount: d.amount,
-      status: d.status,
-      createdAt: createdAtNum,
-    };
-  });
-
-  return data;
+  return snap.docs.map(toTransactionRecord);
 }

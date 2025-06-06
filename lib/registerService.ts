@@ -1,18 +1,26 @@
 // lib/registerService.ts
-import { db } from './firebase';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { User } from 'firebase/auth';
-import QRCode from 'qrcode'
+import { db, auth } from './firebase';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
+import { createUserWithEmailAndPassword, User } from 'firebase/auth';
+import QRCode from 'qrcode';
 
 export async function generateQRCodeBase64(url: string): Promise<string> {
-    try {
-      const base64 = await QRCode.toDataURL(url)
-      return base64
-    } catch (err) {
-      console.error('生成二维码失败', err)
-      return ''
-    }
+  try {
+    const base64 = await QRCode.toDataURL(url);
+    return base64;
+  } catch (err) {
+    console.error('生成二维码失败', err);
+    return '';
   }
+}
 
 function generateInviteCode(length = 8): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 排除容易混淆的字符
@@ -40,21 +48,35 @@ async function generateUniqueInviteCode(): Promise<string> {
   return code!;
 }
 
-export async function registerNewUser(user: User, referralCode?: string) {
+export async function registerUserWithReferral({
+  email,
+  password,
+  displayName,
+  inviterCode,
+}: {
+  email: string;
+  password: string;
+  displayName: string;
+  inviterCode?: string;
+}) {
+  // 注册 Firebase 用户
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
   const uid = user.uid;
-  const email = user.email ?? '';
-  const displayName = user.displayName ?? '';
+
   const inviteCode = await generateUniqueInviteCode();
   const inviteUrl = `https://yourdomain.com/register?ref=${inviteCode}`;
-  const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(inviteUrl)}&chs=200x200&chld=L|0`;
+  const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(
+    inviteUrl
+  )}&chs=200x200&chld=L|0`;
 
   let parentId: string | null = null;
   let grandParentId: string | null = null;
 
   // 建立上下级关系
-  if (referralCode) {
+  if (inviterCode) {
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('inviteCode', '==', referralCode));
+    const q = query(usersRef, where('inviteCode', '==', inviterCode));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       const parentDoc = snapshot.docs[0];
@@ -76,9 +98,11 @@ export async function registerNewUser(user: User, referralCode?: string) {
     createdAt: Date.now(),
     points: 0,
   });
-}
-export {
-  generateInviteCode,
-  registerNewUser as registerUserWithReferral
+
+  return user; // 返回新用户对象
 }
 
+// 如有其他地方使用以下命名导出也保持不变
+export {
+  generateInviteCode,
+};

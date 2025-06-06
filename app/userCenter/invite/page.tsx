@@ -27,7 +27,7 @@ export default function InvitePage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <h1 className="text-2xl font-bold mb-6">邀请好友</h1>
-      <InviteCard userData={{ inviteCode }} />
+      <InviteCard />
     </div>
   );
 }

@@ -10,6 +10,8 @@ export interface UserData {
   grandParentId?: string | null; // 二级邀请人
   createdAt: number;          // 注册时间戳
   points: number;             // 当前积分
+  avatarUrl?: string; // ✅ 添加这一行
+  invitedBy?: string;       // ✅ 添加这一行
 }
 
 
@@ -71,3 +73,28 @@ export type DrawResult = {
   result: 'up' | 'down';
   createdAt: number;
 };
+
+//提现审核机制
+export interface TransactionRecord {
+  id: string;
+  userId: string;
+  amount: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: number;
+  // 加入以下字段：
+  accountId?: string; // ← 添加这行
+}
+
+
+// types.ts（可放在 lib/types.ts 或 components/types.ts）
+export interface PeriodData {
+  period: string;
+  openPrice: number | null;
+  closePrice: number | null;
+  poolAmount: number;
+  riseAmount?: number;
+  fallAmount?: number;
+  userBetAmount?: number;
+  userBetDirection?: 'up' | 'down';
+  percentageChange?: number;
+}

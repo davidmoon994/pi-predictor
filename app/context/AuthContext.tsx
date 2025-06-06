@@ -1,64 +1,85 @@
 // context/AuthContext.tsx
-"use client"
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth } from "@lib/firebase"; // Firebase 配置文件
-import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+'use client';
 
-// 创建 Context
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  onAuthStateChanged,
+  signOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  User as FirebaseUser,
+} from 'firebase/auth';
+import { onSnapshot } from 'firebase/firestore';
+
+import { auth } from '../../lib/firebase';
+import { useUserStore } from '../../lib/store/useStore';
+import { UserData } from '../../lib/types';
+import { getUserDocRef } from '../../lib/userService';
+
 const AuthContext = createContext<any>(null);
-
-// 使用 useAuth 钩子
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const setUser = useUserStore((state) => state.setUser);
+  const clearUser = useUserStore((state) => state.clearUser);
 
-  // 监听认证状态的变化
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    let unsubscribeUserSnapshot: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+
       if (user) {
-        setUser(user); // 用户已登录
+        const userRef = getUserDocRef(user.uid);
+        unsubscribeUserSnapshot = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data() as UserData;
+            setUser(userData);
+          }
+        });
       } else {
-        setUser(null); // 用户未登录
+        clearUser();
+        if (unsubscribeUserSnapshot) {
+          unsubscribeUserSnapshot();
+          unsubscribeUserSnapshot = null;
+        }
       }
     });
 
-    return () => unsubscribe(); // 清理监听器
-  }, []);
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserSnapshot) {
+        unsubscribeUserSnapshot();
+      }
+    };
+  }, [setUser, clearUser]);
 
-  // 用户注册
+  // 注册
   const signup = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("注册失败", error.message);
-      } else {
-        console.error("注册失败，发生未知错误");
-      }
-    }
-    };
-
-  // 用户登录
-  const login = async (email: string, password: string) => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("登录失败", error.message);
-      } else {
-        console.error("登录失败，发生未知错误");
-      }
+    } catch (error: any) {
+      console.error('注册失败', error.message ?? error);
     }
   };
 
-  // 用户登出
+  // 登录
+  const login = async (email: string, password: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      console.error('登录失败', error.message ?? error);
+    }
+  };
+
+  // 登出
   const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user: firebaseUser, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -123,7 +123,7 @@ export default function KLineChart({ data = [], currentPrice = "" }: KLineProps)
           color: "#facc15",
         },
         beginAtZero: true,
-        suggestedMax: maxVolume * 1.2,
+        suggestedMax: maxVolume * 5,
         grid: {
           drawOnChartArea: false,
         },

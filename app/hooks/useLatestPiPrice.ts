@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { getLatestPriceFromFirestore } from "@lib/getKlineFromFirestore";
+import { getLatestPriceFromFirestore } from "../../lib/getKlineFromFirestore";
 
 export const useLatestPiPrice = (token: string = "PI") => {
   const [price, setPrice] = useState<number | null>(null);

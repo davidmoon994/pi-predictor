@@ -1,142 +1,152 @@
-//app/components/CardSlider.tsx
-"use client";
-import { useRef, useState, useEffect } from "react";
-import PastCard from "./PastCard";
-import CurrentCard from "./CurrentCard";
-import NextCard from "./NextCard";
-import UpcomingCard from "./UpcomingCard";
-import { drawAndSettle } from '@lib/drawService';
+// app/components/CardSlider.tsx
+'use client';
 
-// ✅ 定义接收的 Props 类型
-type User = {
-  uid: string;
-  displayName: string;
-  email?: string;
-};
+import React, { useEffect, useRef, useState } from 'react';
+import CurrentCard from './CurrentCard';
+import PastCard from './PastCard';
+import NextCard from './NextCard';
+import UpcomingCard from './UpcomingCard';
+import CardWrapper from './ui/CardWrapper';
+import { useUserStore } from '../../lib/store/useStore';
+import { useKlineStore } from '../../lib/store/klineStore';
+import { drawAndSettle, getRecentPeriods } from '../../lib/drawService'; // ✅ 新增 getRecentPeriods
+import { usePeriodStore } from '../../lib/store/usePeriodStore';
+import { UserData } from "@lib/types"
 
-type CardSliderProps = {
-  user: User | null;
+interface CardSliderProps {
+  user: UserData | null;
   onPeriodEnd: () => void;
-};
+}
 
-// ✅ 接收 props
-const CardSlider = ({ user, onPeriodEnd }: CardSliderProps) => {
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const [scrollIndex, setScrollIndex] = useState(0);
-  const [openPrice, setOpenPrice] = useState<number | null>(null);
-  const [closePrice, setClosePrice] = useState<number | null>(null);
-  const [periodId, setPeriodId] = useState("20250521");
-  const [timeLeft, setTimeLeft] = useState(300);
-  const [latestPrice, setLatestPrice] = useState<number | null>(null);
 
-  const cardWidth = 280;
+const periodDuration = 5 * 60; // 每期 5 分钟（秒）
 
-  const goToNextPeriod = () => {
-    const nextPeriod = (parseInt(periodId) + 1).toString();
-    setPeriodId(nextPeriod);
-    setTimeLeft(300);
+const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { user } = useUserStore();
+  const {
+    periodNumber,
+    periodStartTime,
+    updatePeriodNumber,
+    updatePeriodStartTime,
+    currentPrices,
+  } = useKlineStore();
+
+  const handleBet = (type: 'up' | 'down', amount: number) => {
+    console.log('用户下注：', type, amount);
   };
+  
 
-  const fetchKlineData = async () => {
-    try {
-      const response = await fetch('/api/kline');
-      const data = await response.json();
-      const klineData = data?.data?.[0];
-      return {
-        open: klineData?.open,
-        close: klineData?.close,
-      };
-    } catch (error) {
-      console.error("Failed to fetch K-line data:", error);
-      return { open: null, close: null };
-    }
-  };
+  const [currentTimeLeft, setCurrentTimeLeft] = useState(300); // 当前卡 5分钟倒计时
+  const [nextTimeLeft, setNextTimeLeft] = useState(600);       // 下期卡 10分钟
+  const [upcomingTimeLeft, setUpcomingTimeLeft] = useState(900); // 即将到来卡 15分钟
 
+  // 每秒重新计算倒计时
   useEffect(() => {
-    const updateKlineData = async () => {
-      const { open, close } = await fetchKlineData();
-      setOpenPrice(open);
-      setClosePrice(close);
-    };
+    if (!periodStartTime) return;
 
-    updateKlineData();
-    const interval = setInterval(updateKlineData, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsedSec = Math.floor((now - periodStartTime) / 1000);
+      const left = periodDuration - (elapsedSec % periodDuration);
 
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      if (openPrice !== null && closePrice !== null) {
-        drawAndSettle(periodId, openPrice, closePrice).then(() => {
-          goToNextPeriod();
-          onPeriodEnd(); // ✅ 通知父组件开奖已完成
-        });
-      }
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setCurrentTimeLeft(left);
+      setNextTimeLeft(left + periodDuration);
+      setUpcomingTimeLeft(left + 2 * periodDuration);
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft, openPrice, closePrice, periodId]);
+    return () => clearInterval(interval);
+  }, [periodStartTime]);
 
+  // 结算逻辑，当倒计时接近结束时触发
   useEffect(() => {
-    const slider = sliderRef.current;
-    if (slider) {
-      requestAnimationFrame(() => {
-        slider.scrollLeft = slider.scrollWidth - slider.clientWidth;
-      });
+    if (currentTimeLeft === 1 && periodNumber != null && currentPrices) {
+      const { open, close, high, low } = currentPrices;
+
+      if (open != null && close != null && high != null && low != null) {
+        drawAndSettle(
+          periodNumber,
+          open,
+          close,
+          high,
+          low,
+          0, // poolAmount 目前传 0 可改成真实值
+          0, // upAmount
+          0, // downAmount
+          periodStartTime ?? Date.now()
+        ).then(() => {
+          updatePeriodNumber(periodNumber + 1);
+          updatePeriodStartTime(Date.now());
+
+          const container = scrollRef.current;
+          if (container) {
+            container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+          }
+        });
+      } else {
+        // 价格不完整，依旧推进期数
+        updatePeriodNumber(periodNumber + 1);
+        updatePeriodStartTime(Date.now());
+      }
+    }
+  }, [currentTimeLeft, periodNumber, currentPrices, updatePeriodNumber, updatePeriodStartTime, periodStartTime]);
+
+  // 初次加载滑动到最右
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (container) {
+      container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
     }
   }, []);
 
-  const scrollLeft = () => {
-    if (scrollIndex > 0) {
-      const newIndex = scrollIndex - 1;
-      sliderRef.current?.scrollTo({ left: newIndex * cardWidth, behavior: "smooth" });
-      setScrollIndex(newIndex);
-    }
-  };
+  // 加载最近10期结算缓存
+  const recentPeriods = getRecentPeriods();
 
-  const scrollRight = () => {
-    if (scrollIndex < 5 - 1) {
-      const newIndex = scrollIndex + 1;
-      sliderRef.current?.scrollTo({ left: newIndex * cardWidth, behavior: "smooth" });
-      setScrollIndex(newIndex);
-    }
-  };
-
-  const pastPeriods = Array.from({ length: 10 }, (_, i) =>
-    (parseInt(periodId) - 10 + i).toString()
-  );
+  if (periodNumber == null) return <div>加载中...</div>;
 
   return (
     <div className="relative w-full">
       <div
-        ref={sliderRef}
-        className="w-full overflow-x-scroll whitespace-nowrap flex items-start gap-4 px-4 pb-2 scroll-smooth scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"
-        style={{ scrollBehavior: "smooth", scrollbarGutter: "stable" }}
+        ref={scrollRef}
+        className="flex overflow-x-auto space-x-4 p-4 no-scrollbar"
+        style={{ scrollBehavior: 'smooth' }}
       >
-        {pastPeriods.map((period) => (
-          <div key={period} className="inline-block w-[260px] shrink-0">
-            <PastCard period={period} />
+        {/* 最近10期往期PastCard */}
+        {recentPeriods.map((period) => (
+          <div key={`past-${period.periodNumber}`} className="flex-shrink-0 w-[240px]">
+            <CardWrapper>
+              <PastCard
+                period={period.periodNumber}
+                open={period.open}
+                close={period.close}
+                pool={period.poolAmount}
+                readableTime={period.readableTime}
+        riseFallRatio={period.riseFallRatio}
+              />
+            </CardWrapper>
           </div>
         ))}
 
-        <div className="inline-block w-[260px] shrink-0">
-          <CurrentCard
-            period={periodId}
-            user={user}
-            onPeriodEnd={onPeriodEnd}
-          />
+        {/* 当前期卡片 */}
+        <div className="flex-shrink-0 w-[240px]">
+          <CardWrapper>
+            <CurrentCard timeLeft={currentTimeLeft} onBet={handleBet} />
+
+          </CardWrapper>
         </div>
 
-        <div className="inline-block w-[260px] shrink-0">
-          <NextCard period={(parseInt(periodId) + 1).toString()} />
+        {/* 下一期卡片 */}
+        <div className="flex-shrink-0 w-[240px]">
+          <CardWrapper>
+          <NextCard timeLeft={nextTimeLeft} onBet={handleBet} />
+          </CardWrapper>
         </div>
 
-        <div className="inline-block w-[260px] shrink-0">
-          <UpcomingCard period={(parseInt(periodId) + 2).toString()} />
+        {/* 即将到来卡片 */}
+        <div className="flex-shrink-0 w-[240px]">
+          <CardWrapper>
+          <UpcomingCard timeLeft={upcomingTimeLeft} onBet={handleBet} />
+          </CardWrapper>
         </div>
       </div>
     </div>

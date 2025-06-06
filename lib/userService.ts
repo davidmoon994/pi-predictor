@@ -12,8 +12,9 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { UserData, Commission, WalletTransaction } from './types';
+import { useUserStore } from './store/useStore'; // ✅ 引入 Zustand 用户状态
 
-// 获取当前登录用户数据
+// 获取当前登录用户数据，并写入 Zustand
 export async function getUserData(): Promise<UserData | null> {
   const currentUser = auth.currentUser;
   if (!currentUser) return null;
@@ -21,9 +22,23 @@ export async function getUserData(): Promise<UserData | null> {
   const docRef = doc(db, 'users', currentUser.uid);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
-    return { uid: currentUser.uid, ...docSnap.data() } as UserData;
+    const userData = { uid: currentUser.uid, ...docSnap.data() } as UserData;
+
+    // ✅ 更新 Zustand 状态
+    useUserStore.getState().setUser(userData);
+
+    return userData;
   }
   return null;
+}
+
+export async function fetchUserPoints(uid: string): Promise<number> {
+  const userDoc = await getDoc(doc(db, 'users', uid));
+  if (userDoc.exists()) {
+    const data = userDoc.data();
+    return data.points ?? 0;
+  }
+  return 0;
 }
 
 // 获取指定用户的分润记录
@@ -136,4 +151,10 @@ export async function getClientHierarchyWithDetails(adminUid: string) {
   }));
 
   return clients;
+}
+/**
+ * 获取用户的 Firestore 文档引用
+ */
+export function getUserDocRef(uid: string) {
+  return doc(db, 'users', uid);
 }

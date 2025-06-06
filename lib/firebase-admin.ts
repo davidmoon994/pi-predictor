@@ -1,10 +1,10 @@
 // lib/firebase-admin.ts
 import admin from 'firebase-admin';
 
-let app: admin.app.App | null = null;
-
-export function getFirebaseAdminApp() {
-  if (app) return app;
+export function getFirebaseAdminApp(): admin.app.App {
+  if (admin.apps.length > 0) {
+    return admin.app(); // 返回已初始化的默认 app
+  }
 
   const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
   if (!base64) {
@@ -20,13 +20,12 @@ export function getFirebaseAdminApp() {
     throw new Error("❌ 环境变量 FIREBASE_SERVICE_ACCOUNT_BASE64 无效");
   }
 
-  app = admin.initializeApp({
+  return admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
-
-  return app;
 }
 
 export function getFirestore() {
   return getFirebaseAdminApp().firestore();
 }
+

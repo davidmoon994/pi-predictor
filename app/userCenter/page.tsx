@@ -66,7 +66,7 @@ export default function UserCenterPage() {
               <CommissionsCard commissions={commissions} />
             </div>
             <div className="postcard">
-              <InviteCard userData={userData} />
+            <InviteCard />
             </div>
             <div className="postcard">
               <WalletCard userId={userData.uid} points={userData.points ?? 0} />
