@@ -1,3 +1,4 @@
+//lib/drawService.ts
 import { db } from "./firebase";
 import {
   collection,
@@ -157,4 +158,34 @@ export async function drawAndSettle(
     downAmount,
     riseFallRatio,
   });
+}
+export async function fetchRecentPeriodsFromFirestore(): Promise<PeriodData[]> {
+  const q = query(
+    collection(db, 'periods'),
+    where('close', '!=', null) // 保证已结算
+  );
+  const snap = await getDocs(q);
+  const docs = snap.docs
+    .map(doc => {
+      const data = doc.data();
+      return {
+        periodNumber: data.periodNumber,
+        readableTime: new Date(data.createdAt).toLocaleString(),
+        open: data.open,
+        close: data.close,
+        high: data.high,
+        low: data.low,
+        poolAmount: data.totalPool,
+        upAmount: data.upAmount,
+        downAmount: data.downAmount,
+        riseFallRatio:
+          data.upAmount + data.downAmount === 0
+            ? '0:0'
+            : `${((data.upAmount / (data.upAmount + data.downAmount)) * 100).toFixed(1)}% : ${((data.downAmount / (data.upAmount + data.downAmount)) * 100).toFixed(1)}%`,
+      };
+    })
+    .sort((a, b) => b.periodNumber - a.periodNumber)
+    .slice(0, 10); // 取最近10期
+
+  return docs;
 }

@@ -19,9 +19,9 @@ export default function AdminLoginPage() {
     setLoading(true)
     try {
       const result = await signInWithEmailAndPassword(auth, email, password)
+      console.log('✅ 登录成功:', result.user)
 
-      // 获取对应的管理员数据
-      const ref = doc(db, 'adminUsers', email)
+      const ref = doc(db, 'adminUsers', email.toLowerCase()) // 建议邮箱小写处理
       const snap = await getDoc(ref)
 
       if (!snap.exists()) {
@@ -31,17 +31,24 @@ export default function AdminLoginPage() {
       }
 
       const data = snap.data()
+      console.log('✅ 管理员数据:', data)
+
       if (!data.role) {
         setError('您的管理员权限尚未配置，请等待审批。')
         setLoading(false)
         return
       }
 
-      // 登录成功，保存本地
-localStorage.setItem('admin-email', email)
-router.push('/admin/dashboard') // ✅ 跳转到后台主页
+      // ✅ 设置本地登录状态
+      localStorage.setItem('admin-email', email)
+      localStorage.setItem('admin-role', data.role)
+      localStorage.setItem('admin-auth', 'true')
+
+      console.log('✅ 登录信息已存储，准备跳转到后台')
+      router.push('/admin/dashboard')
 
     } catch (err: any) {
+      console.error('❌ 登录失败:', err)
       setError(err.message || '登录失败')
     } finally {
       setLoading(false)

@@ -24,6 +24,7 @@ export default function AdminDashboard() {
       const storedRole = localStorage.getItem('admin-role')
       setRole(storedRole)
     }
+
   }, [router])
 
   const canView = (allowed: string[]) => {
