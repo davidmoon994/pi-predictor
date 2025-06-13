@@ -10,4 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send request to /api/fetch-kline
-        run: curl -s https://pi-predictor-990h83ibr-davidmoon994s-projects.vercel.app/api/fetch-kline
+  run: |
+    curl -s -H "User-Agent: Mozilla/5.0" \
+         -H "Accept: application/json" \
+         https://pi-predictor-990h83ibr-davidmoon994s-projects.vercel.app/api/fetch-kline
