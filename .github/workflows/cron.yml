@@ -13,4 +13,4 @@ jobs:
   run: |
     curl -s -H "User-Agent: Mozilla/5.0" \
          -H "Accept: application/json" \
-         https://pi-predictor-990h83ibr-davidmoon994s-projects.vercel.app/api/fetch-kline
+         https://pi-predictor-po1c4i7ps-pi-word.vercel.app/api/fetch-kline
