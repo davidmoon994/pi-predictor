@@ -1,0 +1,13 @@
+name: Trigger Kline Fetch Every Minute
+
+on:
+  schedule:
+    - cron: "* * * * *"  # 每分钟执行一次
+  workflow_dispatch:     # 允许手动触发
+
+jobs:
+  ping-vercel-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send request to /api/fetch-kline
+        run: curl -s https://pi-predictor-990h83ibr-davidmoon994s-projects.vercel.app/api/fetch-kline
