@@ -1,0 +1,10 @@
+{
+    "cron": [
+      {
+        "path": "/api/fetch-kline",
+        "schedule": "* * * * *",
+        "method": "GET"
+      }
+    ]
+  }
+  

@@ -63,7 +63,7 @@ export const useKlineStore = create<KlineState>((set) => ({
     const msTimestamp = latest.timestamp * 1000;
     const date = new Date(msTimestamp);
 
-    const baseTime = new Date('2025-06-01T00:00:00Z').getTime();
+    const baseTime = new Date('2025-06-06T00:00:00Z').getTime();
     const minutesSinceBase = Math.floor((msTimestamp - baseTime) / 60000);
     const periodNumber = minutesSinceBase + 1;
 

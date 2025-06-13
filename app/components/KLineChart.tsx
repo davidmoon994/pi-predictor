@@ -1,159 +1,134 @@
 // app/components/KLineChart.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  TimeScale,
-  Tooltip,
-  Legend,
-  ChartOptions,
-  ChartData,
-  registerables,
-} from "chart.js";
-import { Chart } from "react-chartjs-2";
-import {
-  CandlestickController,
-  CandlestickElement,
-} from "chartjs-chart-financial";
-import "chartjs-adapter-date-fns";
-
-ChartJS.register(
-  ...registerables,
-  CandlestickController,
-  CandlestickElement
-);
+  createChart,
+  CrosshairMode,
+  type CandlestickData,
+  type UTCTimestamp,
+} from "lightweight-charts";
 
 type KLineProps = {
-  data: any[];
-  currentPrice?: string;
+  data: Array<{
+    time: UTCTimestamp;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+  }>;
 };
 
-export default function KLineChart({ data = [], currentPrice = "" }: KLineProps) {
-  const [isZoomReady, setIsZoomReady] = useState(false);
+export default function KLineChart({ data }: { data: Array<{ time: UTCTimestamp; open: number; high: number; low: number; close: number }> }) {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
+  const candleSeriesRef = useRef<any>(null);
+
+  const [hoverData, setHoverData] = useState<{
+    time: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+  } | null>(null);
 
   useEffect(() => {
-    import("chartjs-plugin-zoom").then((zoomPluginModule) => {
-      ChartJS.register(zoomPluginModule.default);
-      setIsZoomReady(true);
+    if (!chartContainerRef.current) return;
+
+    // 这里不显式声明 chart 类型，交给 TS 自动推断
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 240,
+      layout: { background: { color: "#000" }, textColor: "#facc15" },
+      grid: { vertLines: { color: "#222" }, horzLines: { color: "#222" } },
+      crosshair: { mode: CrosshairMode.Normal },
+      rightPriceScale: { borderVisible: false },
+      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
     });
-  }, []);
 
-  if (!isZoomReady) return null;
+    chartRef.current = chart;
 
-  const candleData = data.map((item: any) => ({
-    x: item.timestamp * 1000,
-    o: parseFloat(item.open),
-    h: parseFloat(item.high),
-    l: parseFloat(item.low),
-    c: parseFloat(item.close),
-  }));
+    // 这里正常调用，TS 不会报错了
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: "#22c55e",
+      downColor: "#ef4444",
+      borderVisible: false,
+      wickUpColor: "#22c55e",
+      wickDownColor: "#ef4444",
+    });
 
-  const volumeData = data.map((item: any) => ({
-    x: item.timestamp * 1000,
-    y: parseFloat(item.volume ?? 0),
-  }));
+    candleSeriesRef.current = candleSeries;
 
-  const maxVolume = Math.max(...volumeData.map((d) => d.y), 100);
+    const candleData = data.map((item) => ({
+      time: item.time,
+      open: item.open,
+      high: item.high,
+      low: item.low,
+      close: item.close,
+    }));
 
-  const chartData = {
-    datasets: [
-      {
-        label: "价格",
-        type: "candlestick",
-        data: candleData,
-        yAxisID: "y",
-        upColor: "#00ff00",
-        downColor: "#ff3b30",
-        borderColor: "#00ff00",
-        borderDownColor: "#ff3b30",
-        wickColor: "#ffffff",
-        borderWidth: 1.5,
-      } as any, // ✅ 避免类型限制
-      {
-        label: "成交量",
-        type: "bar",
-        data: volumeData,
-        yAxisID: "y1",
-        backgroundColor: "rgba(255, 193, 7, 0.7)",
-        borderColor: "rgba(255, 193, 7, 1)",
-        borderWidth: 1,
-        barThickness: 8,
-      },
-    ],
-  };
+    candleSeries.setData(candleData);
 
-  const options: ChartOptions<"candlestick"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: "nearest",
-      intersect: false,
-    },
-    scales: {
-      x: {
-        type: "time",
-        time: {
-          unit: "minute",
-          tooltipFormat: "HH:mm",
-        },
-        ticks: { color: "#facc15" },
-        grid: { display: false },
-      },
-      y: {
-        position: "right",
-        title: {
-          display: true,
-          text: "价格",
-        },
-        ticks: {
-          color: "#22c55e",
-        },
-      },
-      y1: {
-        position: "left",
-        title: {
-          display: true,
-          text: "成交量",
-        },
-        ticks: {
-          color: "#facc15",
-        },
-        beginAtZero: true,
-        suggestedMax: maxVolume * 5,
-        grid: {
-          drawOnChartArea: false,
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        labels: { color: "#facc15" },
-      },
-      tooltip: {
-        mode: "index",
-        intersect: false,
-      },
-      zoom: {
-        pan: {
-          enabled: true,
-          mode: "x",
-        },
-        zoom: {
-          wheel: { enabled: true },
-          pinch: { enabled: true },
-          mode: "x",
-        },
-      },
-    },
-  };
+    chart.subscribeCrosshairMove((param) => {
+      if (!param || !param.time || !param.seriesData) {
+        setHoverData(null);
+        return;
+      }
+
+      const seriesData = param.seriesData.get(candleSeries) as CandlestickData | undefined;
+      if (!seriesData) {
+        setHoverData(null);
+        return;
+      }
+      
+      setHoverData({
+        time: new Date((param.time as number) * 1000).toLocaleString(),
+        open: seriesData.open,
+        high: seriesData.high,
+        low: seriesData.low,
+        close: seriesData.close,
+      });
+    }); // ✅ 补上这个右括号！
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.resize(chartContainerRef.current.clientWidth, 240);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      chart.remove();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [data]);
 
   return (
-    <div style={{ width: "100%", height: "230px" }}>
-      <Chart type="candlestick" data={chartData} options={options} />
+    <div style={{ position: "relative", width: "100%", height: "240px" }}>
+      <div ref={chartContainerRef} style={{ width: "100%", height: "100%" }} />
+      {hoverData && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            padding: "4px 8px",
+            fontSize: "12px",
+            color: "#facc15",
+            backgroundColor: "rgba(0,0,0,0.6)",
+            zIndex: 10,
+          }}
+        >
+          时间: {hoverData.time}
+          <br />
+          开盘: {hoverData.open}
+          <br />
+          收盘: {hoverData.close}
+          <br />
+          最高: {hoverData.high}
+          <br />
+          最低: {hoverData.low}
+        </div>
+      )}
     </div>
   );
 }

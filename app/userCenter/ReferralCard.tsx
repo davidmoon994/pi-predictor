@@ -1,8 +1,9 @@
 'use client';
-
+import { auth } from "../../lib/firebase"; // 根据你的项目结构调整路径
 import { useEffect, useState } from 'react';
 import { db } from '@lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { UserData } from "@lib/types";
 
 const ReferralCard = () => {
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -18,20 +19,27 @@ const ReferralCard = () => {
         }
 
         // 获取一级客户
-        const refQuery = query(collection(db, 'users'), where('invitedBy', '==', user.uid));
+        const refQuery = query(collection(db, "users"), where("invitedBy", "==", user.uid));
         const refSnapshot = await getDocs(refQuery);
-        const refUsers = refSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+        const refUsers: UserData[] = refSnapshot.docs.map((doc) => ({
+          ...(doc.data() as UserData),
+          uid: doc.id,
+        }));
         setReferrals(refUsers);
 
         // 获取二级客户（从一级客户获取其邀请的下级）
-        const secondLevelUsers = [];
+        const secondLevelUsers: UserData[] = [];
         for (const ref of refUsers) {
-          const secondRefQuery = query(collection(db, 'users'), where('invitedBy', '==', ref.uid));
+          const secondRefQuery = query(collection(db, "users"), where("invitedBy", "==", ref.uid));
           const secondRefSnapshot = await getDocs(secondRefQuery);
-          secondRefSnapshot.docs.forEach(doc => secondLevelUsers.push({ uid: doc.id, ...doc.data() }));
+          secondRefSnapshot.forEach((doc) =>
+            secondLevelUsers.push({
+              ...(doc.data() as UserData),
+              uid: doc.id,
+            })
+          );
         }
         setSecondLevelReferrals(secondLevelUsers);
-
       } catch (error) {
         console.error("获取客户数据失败:", error);
       }
@@ -39,6 +47,7 @@ const ReferralCard = () => {
 
     fetchReferralData();
   }, []);
+
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg text-white shadow-lg">

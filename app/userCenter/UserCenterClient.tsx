@@ -30,6 +30,7 @@ type Commission = {
 const UserCenterClient = ({ onData }: Props) => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      console.log('🔥 当前用户:', user); // ← 加这个
       if (!user) return;
 
       // 获取当前用户数据

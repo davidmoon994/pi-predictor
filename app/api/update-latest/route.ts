@@ -4,7 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { getFirestore } from '../../../lib/firebase-admin';
-import { fetchLatestKlineFromGate } from '../../../lib/fetchAndCacheKline';
+import { fetchAndAppendLatestKline } from '../../../lib/fetchAndCacheKline';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +21,7 @@ export async function GET() {
     }
 
     // 拉最新单条数据
-    const latestKline = await fetchLatestKlineFromGate();
+    const latestKline = await fetchAndAppendLatestKline();
     if (!latestKline) {
       return NextResponse.json({ message: '未获取到最新K线数据' }, { status: 500 });
     }

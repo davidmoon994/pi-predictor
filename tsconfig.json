@@ -35,11 +35,14 @@
     ]
   },
   "include": [
-    "src/**/*.ts", // 包含所有 TypeScript 文件
-    "test/**/*.ts" // 包含测试文件夹中的 TypeScript 文件
-    ,
-    ".next/types/**/*.ts"
-  ],
+  "app/**/*",
+  "lib/**/*",
+  "types/**/*.d.ts",
+  "src/**/*.ts",
+  "test/**/*.ts",
+  ".next/types/**/*.ts"
+],
+
   "exclude": [
     "node_modules"
   ]

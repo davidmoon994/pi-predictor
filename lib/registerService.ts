@@ -50,8 +50,8 @@ async function generateUniqueInviteCode(): Promise<string> {
 
 export async function registerUserWithReferral({
   email,
-  password,
-  displayName,
+  password, 
+  displayName, 
   inviterCode,
 }: {
   email: string;

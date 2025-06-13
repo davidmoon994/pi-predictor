@@ -98,3 +98,4 @@ export interface PeriodData {
   userBetDirection?: 'up' | 'down';
   percentageChange?: number;
 }
+

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { registerUser } from "../../lib/authService";
+import { registerUserWithReferral } from "lib/registerService";
 import { useSearchParams } from "next/navigation";
 
 export default function RegisterModal({ onClose }: { onClose: () => void }) {
@@ -32,7 +32,13 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
     setLoading(true);
 
     try {
-      await registerUser(email, password, displayName, inviterId || undefined);
+      await registerUserWithReferral({
+        email,
+        password,
+        displayName,
+        inviterCode: inviterId || undefined,
+      });
+      
       setSuccess(true);
       setTimeout(() => {
         onClose(); // 延迟关闭

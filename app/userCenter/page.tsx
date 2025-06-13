@@ -49,6 +49,7 @@ export default function UserCenterPage() {
     <>
       <UserCenterClient onData={handleDataLoad} />
       <div className="user-center">
+      <div className="text-white">测试渲染：页面已加载。</div>
         {isReady ? (
           <div className="content grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div className="postcard">

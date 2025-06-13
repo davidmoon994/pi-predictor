@@ -6,8 +6,8 @@ import CardSlider from "./components/CardSlider";
 import { auth } from "../lib/firebase";
 import { useUserStore } from "../lib/store/useStore";
 import { useKlineStore } from "../lib/store/klineStore";
-import { UserData } from "@lib/types"; // 替换成你的类型
-
+import { UserData } from "@lib/types";
+import type { UTCTimestamp } from "lightweight-charts";
 
 export default function HomePage() {
   const [price, setPrice] = useState("0.00");
@@ -29,7 +29,6 @@ export default function HomePage() {
           createdAt: Date.now(),
           points: 0,
         });
-        
       } else {
         setUser(null);
       }
@@ -65,6 +64,15 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [setKlineData]);
 
+  // ✅ 将原始 klineData 转换为符合 <KLineChart /> 的格式
+  const chartData = klineData.map((item) => ({
+    time: item.timestamp as UTCTimestamp,
+    open: Number(item.open),
+    high: Number(item.high),
+    low: Number(item.low),
+    close: Number(item.close),
+  }));
+
   return (
     <>
       <Navbar />
@@ -88,7 +96,7 @@ export default function HomePage() {
           />
 
           <div className="w-full h-[250px] bg-white text-gray-800 px-4 sm:px-8 py-4 shadow-lg">
-            <KLineChart data={klineData} currentPrice={price} />
+            <KLineChart data={chartData}  />
           </div>
 
           <div className="w-full flex justify-center gap-6 bg-gray-800/80 py-3 rounded-xl shadow">
