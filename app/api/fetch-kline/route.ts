@@ -3,6 +3,11 @@
 import { fetchAndAppendLatestKline } from '@lib/fetchAndCacheKline';
 import { NextResponse } from 'next/server';
 
+// ⏰ 定时任务配置（每分钟执行）
+export const config = {
+  schedule: '* * * * *',
+};
+
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
