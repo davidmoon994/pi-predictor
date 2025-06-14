@@ -1,16 +1,27 @@
-name: Trigger Kline Fetch Every Minute
+name: Sync Kline to Firestore
 
 on:
   schedule:
-    - cron: "* * * * *"  # 每分钟执行一次
-  workflow_dispatch:     # 允许手动触发
+    - cron: "* * * * *"  # 每分钟执行
+  workflow_dispatch:
 
 jobs:
-  ping-vercel-api:
+  sync-kline:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Send request to /api/fetch-kline
-  run: |
-    curl -s -H "User-Agent: Mozilla/5.0" \
-         -H "Accept: application/json" \
-         https://pi-predictor-po1c4i7ps-pi-word.vercel.app/api/fetch-kline
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Kline Sync Script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: npm run sync:kline
