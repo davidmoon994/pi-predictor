@@ -1,48 +1,33 @@
 {
   "compilerOptions": {
-    "target": "esnext", // 使用最新的 JavaScript 语法
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ], // 设置要包含的库文件
-    "allowJs": true, // 允许编译 JavaScript 文件
-    "skipLibCheck": true, // 跳过库文件检查
-    "strict": true, // 启用所有严格类型检查
-    "forceConsistentCasingInFileNames": true, // 强制文件名一致性
-    "noEmit": true, // 不生成输出文件
-    "esModuleInterop": true, // 允许默认导入
-    "module": "ESNext", // 设置模块为 ESNext
-    "moduleResolution": "node", // 使用 Node.js 模块解析策略
-    "resolveJsonModule": true, // 允许导入 JSON 文件
-    "skipDefaultLibCheck": true, // 跳过默认库的检查
-    "isolatedModules": true, // 启用单文件隔离模式
-    "baseUrl": ".", // 设置基础目录
+    "target": "ES2020", // 支持现代语法（如可选链、Promise.allSettled 等）
+    "lib": ["esnext"], // Node 环境只需 ESNext 库
+    "allowJs": true, // 允许 JS 文件
+    "skipLibCheck": true, // 跳过 .d.ts 类型检查
+    "strict": true, // 开启严格模式
+    "forceConsistentCasingInFileNames": true, // 文件名大小写一致
+    "noEmit": true, // 不输出编译产物
+    "esModuleInterop": true, // 支持 default import
+    "module": "CommonJS", // ✅ 重点：用于 Node.js 的模块系统
+    "moduleResolution": "node", // 模块查找方式
+    "resolveJsonModule": true, // 允许 import JSON
+    "baseUrl": ".", // 基础路径
     "paths": {
-      "@/*": [
-        "./app/*"
-      ], // 映射 @/* 到 ./app/* 目录
-      "@lib/*": [
-        "./lib/*"
-      ] // 映射 @lib/* 到 ./lib/* 目录
+      "@/*": ["./app/*"],
+      "@lib/*": ["./lib/*"]
     },
     "incremental": true,
-    "jsx": "preserve",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "jsx": "preserve" // 保持 JSX 不变（适用于前端项目）
   },
   "include": [
-  "app/**/*",
-  "lib/**/*",
-  "types/**/*.d.ts",
-  "src/**/*.ts",
-  "test/**/*.ts",
-  ".next/types/**/*.ts"
-],
-
+    "app/**/*",
+    "lib/**/*",
+    "types/**/*.d.ts",
+    "src/**/*.ts",
+    "test/**/*.ts",
+    ".next/types/**/*.ts",
+    "scripts/**/*.ts" // ✅ 加入 scripts 目录
+  ],
   "exclude": [
     "node_modules"
   ]
