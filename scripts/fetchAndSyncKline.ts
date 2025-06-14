@@ -5,8 +5,7 @@ import { getFirestore } from '../lib/firebase-admin';
 
 const db = getFirestore();
 
-
-// 1. 获取最新 K 线数据
+// 获取最新 K 线数据
 async function fetchLatestKline(count = 1) {
   const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=${count}`;
   const res = await axios.get(url);
@@ -20,7 +19,7 @@ async function fetchLatestKline(count = 1) {
   }));
 }
 
-// 2. 主执行函数
+// 同步函数
 async function syncKline() {
   const klineRef = db.collection('kline_data');
   const snapshot = await klineRef.orderBy('timestamp', 'asc').get();
@@ -32,14 +31,23 @@ async function syncKline() {
 
   const batch = db.batch();
 
-  newKlines.forEach((kline) => {
+  newKlines.forEach((kline: {
+    timestamp: number;
+    volume: number;
+    close: number;
+    high: number;
+    low: number;
+    open: number;
+  }) => {
     const docRef = klineRef.doc(kline.timestamp.toString());
     batch.set(docRef, kline);
   });
 
   if (!firstRun && existingCount >= 200) {
     const docsToDelete = snapshot.docs.slice(0, existingCount + newKlines.length - 200);
-    docsToDelete.forEach((doc) => batch.delete(doc.ref));
+    docsToDelete.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+      batch.delete(doc.ref);
+    });
   }
 
   await batch.commit();

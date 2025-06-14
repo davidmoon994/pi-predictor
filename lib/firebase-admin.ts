@@ -25,7 +25,6 @@ export function getFirebaseAdminApp(): admin.app.App {
   });
 }
 
-export function getFirestore() {
+export function getFirestore(): FirebaseFirestore.Firestore {
   return getFirebaseAdminApp().firestore();
 }
-
