@@ -1,7 +1,10 @@
 // scripts/fetchAndSyncKline.ts
 
 import axios from 'axios';
-import { db } from '../lib/firebase'; // ✅ 使用你自己的封装
+import { getFirestore } from '../lib/firebase-admin';
+
+const db = getFirestore();
+
 
 // 1. 获取最新 K 线数据
 async function fetchLatestKline(count = 1) {

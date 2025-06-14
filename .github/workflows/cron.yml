@@ -1,3 +1,4 @@
+
 name: Sync Kline to Firestore
 
 on:
@@ -22,6 +23,6 @@ jobs:
         run: npm install
 
       - name: Run Kline Sync Script
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: npm run sync:kline
+        env:
+          FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}
