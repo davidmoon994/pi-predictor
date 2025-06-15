@@ -1,5 +1,5 @@
 // scripts/fetchAndSyncKline.ts
-
+// scripts/fetchAndSyncKline.ts
 
 import 'dotenv/config';
 import axios from 'axios';
@@ -7,72 +7,61 @@ import { getFirestore } from '../lib/firebase-admin';
 
 const db = getFirestore();
 
-// 获取最新 K 线数据
-async function fetchLatestKline(count = 1) {
-    const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=${count}`;
-    console.log('请求URL:', url);
-  
-    const headers = {
-      'Accept': 'application/json',
-      'User-Agent': 'pi-predictor-sync-script/1.0'
+// 获取 GateIO 最新未收盘的 5 分钟 K 线（数组最后一条是当前K线）
+async function fetchLatestKline() {
+  const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=2`;
+  const headers = {
+    'Accept': 'application/json',
+    'User-Agent': 'pi-predictor-sync-script/1.0'
+  };
+
+  try {
+    const res = await axios.get(url, { headers });
+    const data = res.data;
+    const item = data[data.length - 1]; // 取最后一条，当前未收盘K线
+
+    return {
+      // 使用接口返回的K线时间戳作为主ID
+      timestamp: Number(item[0]),
+
+      volume: parseFloat(item[1]),
+      close: parseFloat(item[2]),
+      high: parseFloat(item[3]),
+      low: parseFloat(item[4]),
+      open: parseFloat(item[5]),
+
+      // 额外标记本次同步时间，方便区分快照更新时间
+      lastUpdated: Date.now(),
     };
-  
-    try {
-      const res = await axios.get(url, { headers });
-      console.log('响应状态:', res.status);
-      console.log('响应数据:', res.data);
-      return res.data.map((item: string[]) => ({
-        timestamp: Number(item[0]),
-        volume: parseFloat(item[1]),
-        close: parseFloat(item[2]),
-        high: parseFloat(item[3]),
-        low: parseFloat(item[4]),
-        open: parseFloat(item[5]),
-      }));
-    } catch (err: any) {
-      console.error('请求错误状态:', err.response?.status);
-      console.error('请求错误数据:', err.response?.data || err.message);
-      throw err;
-    }
+  } catch (err: any) {
+    console.error('请求错误:', err.response?.data || err.message);
+    throw err;
   }
-  
-  
-// 同步函数
-async function syncKline() {
+}
+
+// 主同步逻辑：每分钟写入当前5分钟K线的实时快照，限制最多 200 条
+async function syncKlineSnapshot() {
   const klineRef = db.collection('kline_data');
   const snapshot = await klineRef.orderBy('timestamp', 'asc').get();
 
   const existingCount = snapshot.size;
-  const firstRun = existingCount === 0;
-
-  const newKlines = await fetchLatestKline(firstRun ? 200 : 1);
+  const latestKline = await fetchLatestKline();
 
   const batch = db.batch();
+  const docRef = klineRef.doc(latestKline.timestamp.toString());
+  batch.set(docRef, latestKline, { merge: true });
 
-  newKlines.forEach((kline: {
-    timestamp: number;
-    volume: number;
-    close: number;
-    high: number;
-    low: number;
-    open: number;
-  }) => {
-    const docRef = klineRef.doc(kline.timestamp.toString());
-    batch.set(docRef, kline);
-  });
-
-  if (!firstRun && existingCount >= 200) {
-    const docsToDelete = snapshot.docs.slice(0, existingCount + newKlines.length - 200);
-    docsToDelete.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
-      batch.delete(doc.ref);
-    });
+  // 超出 200 条时，删除最旧数据
+  if (existingCount >= 200) {
+    const toDelete = snapshot.docs.slice(0, existingCount + 1 - 200);
+    toDelete.forEach(doc => batch.delete(doc.ref));
   }
 
   await batch.commit();
-  console.log(`✅ 同步 ${newKlines.length} 条 K 线成功`);
+  console.log(`✅ 写入快照 @ ${new Date(latestKline.timestamp).toISOString()}`);
 }
 
-syncKline().catch((err) => {
-  console.error('❌ 同步失败:', err.message);
+syncKlineSnapshot().catch((err) => {
+  console.error('❌ 快照同步失败:', err.message);
   process.exit(1);
 });
