@@ -7,8 +7,21 @@ import { getPeriodNumber, formatReadableTime } from '../lib/utils/period';
 const db = getFirestore();
 const klineRef = db.collection('kline_data');
 
+// 定义 KlineData 类型
+interface KlineData {
+  timestamp: number;
+  periodNumber: number;
+  readableTime: string;
+  volume: number;
+  close: number;
+  high: number;
+  low: number;
+  open: number;
+  lastUpdated: number;
+}
+
 // 🟢 拉取历史 200 条 K 线（升序写入）
-async function fetchInitialKlines() {
+async function fetchInitialKlines(): Promise<KlineData[]> {
   const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=200`;
   const headers = {
     Accept: 'application/json',
@@ -18,7 +31,8 @@ async function fetchInitialKlines() {
   const res = await axios.get(url, { headers });
   const raw = res.data;
 
-  return raw.reverse().map((item: string[]) => {
+  // 返回倒序转正序，转换为 KlineData[]
+  return raw.reverse().map((item: string[]): KlineData => {
     const ts = Number(item[0]);
     return {
       timestamp: ts,
@@ -35,7 +49,7 @@ async function fetchInitialKlines() {
 }
 
 // 🟡 拉取最新未收盘的快照
-async function fetchLatestKline() {
+async function fetchLatestKline(): Promise<KlineData> {
   const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=2`;
   const headers = {
     Accept: 'application/json',
@@ -70,7 +84,7 @@ async function syncKline() {
   if (existingCount === 0) {
     console.log('📦 首次运行，写入历史 200 条 K 线...');
     const historicalData = await fetchInitialKlines();
-    historicalData.forEach((item) => {
+    historicalData.forEach((item: KlineData) => {
       const docRef = klineRef.doc(item.timestamp.toString());
       batch.set(docRef, item);
     });
