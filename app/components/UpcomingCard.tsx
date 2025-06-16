@@ -3,11 +3,11 @@
 
 import React from 'react';
 import CardWrapper from './ui/CardWrapper';
-import { useKlineStore } from '../../lib/store/klineStore';
 
 interface UpcomingCardProps {
   timeLeft?: number;
   onBet?: (type: 'up' | 'down', amount: number) => void;
+  periodNumber: number; // ✅ 传入的期号
 }
 
 const formatTime = (seconds: number) => {
@@ -16,15 +16,15 @@ const formatTime = (seconds: number) => {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
-const UpcomingCard: React.FC<UpcomingCardProps> = ({ timeLeft = 900, onBet }) => {
-  const { periodNumber } = useKlineStore();
-  if (periodNumber === undefined) return null; // 或显示 loading 占位符
-  const upcomingPeriod = periodNumber + 2;
-
+const UpcomingCard: React.FC<UpcomingCardProps> = ({
+  timeLeft = 900,
+  onBet,
+  periodNumber,
+}) => {
   return (
     <CardWrapper variant="upcoming">
       <CardWrapper.Header
-        period={upcomingPeriod}
+        period={periodNumber}
         countdown={formatTime(timeLeft)}
       />
 

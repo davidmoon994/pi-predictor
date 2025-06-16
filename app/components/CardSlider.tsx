@@ -10,19 +10,22 @@ import CardWrapper from './ui/CardWrapper';
 import { usePeriodStore } from '../../lib/store/usePeriodStore';
 import { useUserStore } from '../../lib/store/useStore';
 import { useKlineStore } from '../../lib/store/klineStore';
-import { drawAndSettle, getRecentPeriods } from '../../lib/drawService';
-
+import { drawAndSettle } from '../../lib/drawService';
 import { UserData } from '@lib/types';
+import { onSnapshot, getFirestore, collection, query, orderBy, limit } from 'firebase/firestore';
+import { app } from '@lib/firebase'; // 确保正确导入 firebase client
 
 interface CardSliderProps {
   user: UserData | null;
   onPeriodEnd: () => void;
 }
 
-const periodDuration = 5 * 60 * 1000; // 5分钟，单位 ms
+const periodDuration = 5 * 60 * 1000; // 5分钟
 
 const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isSettlingRef = useRef(false);
+
   const { user } = useUserStore();
   const {
     periodNumber,
@@ -32,14 +35,35 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
     currentPrices,
   } = useKlineStore();
 
-  const [currentTimeLeft, setCurrentTimeLeft] = useState(300); // 秒
+  const [currentTimeLeft, setCurrentTimeLeft] = useState(300);
   const [nextTimeLeft, setNextTimeLeft] = useState(600);
   const [upcomingTimeLeft, setUpcomingTimeLeft] = useState(900);
 
   const recentPeriods = usePeriodStore(state => state.history);
+  const setHistory = usePeriodStore(state => state.setHistory);
 
+  // 滚动到最右端
+  const scrollToLatestCard = () => {
+    const container = scrollRef.current;
+    if (container) {
+      container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+    }
+  };
 
-  // 倒计时更新逻辑
+  // 监听 Firestore 最近 10 期数据（结算结果）
+  useEffect(() => {
+    const db = getFirestore(app);
+    const q = query(collection(db, 'periods'), orderBy('periodNumber', 'desc'), limit(10));
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data()).reverse(); // 从旧到新
+      setHistory(data);
+    });
+
+    return () => unsub();
+  }, [setHistory]);
+
+  // 倒计时逻辑
   useEffect(() => {
     if (!periodStartTime) return;
 
@@ -49,14 +73,14 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
       const left = Math.floor((periodDuration - (elapsed % periodDuration)) / 1000);
 
       setCurrentTimeLeft(left);
-      setNextTimeLeft(left + 300); // +5分钟
-      setUpcomingTimeLeft(left + 600); // +10分钟
+      setNextTimeLeft(left + 300);
+      setUpcomingTimeLeft(left + 600);
     }, 1000);
 
     return () => clearInterval(timer);
   }, [periodStartTime]);
 
-  // 每期结算逻辑：当前期结束，结算并进入下一期
+  // 自动结算逻辑（带锁）
   useEffect(() => {
     if (
       currentTimeLeft === 1 &&
@@ -64,8 +88,11 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
       currentPrices?.open != null &&
       currentPrices?.close != null &&
       currentPrices?.high != null &&
-      currentPrices?.low != null
+      currentPrices?.low != null &&
+      !isSettlingRef.current
     ) {
+      isSettlingRef.current = true;
+
       const { open, close, high, low } = currentPrices;
 
       drawAndSettle(
@@ -74,34 +101,37 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
         close,
         high,
         low,
-        0, // 可替换为真实 pool 数据
+        0,
         0,
         0,
         periodStartTime ?? Date.now()
-      ).then(() => {
-        updatePeriodNumber(periodNumber + 1);
-        updatePeriodStartTime(Date.now());
-        onPeriodEnd?.();
+      )
+        .then(() => {
+          updatePeriodNumber(periodNumber + 1);
+          updatePeriodStartTime(Date.now());
+          onPeriodEnd?.();
 
-        const container = scrollRef.current;
-        if (container) {
+          requestAnimationFrame(() => scrollToLatestCard());
+        })
+        .finally(() => {
           setTimeout(() => {
-            container.scrollTo({
-              left: container.scrollWidth,
-              behavior: 'smooth',
-            });
-          }, 300); // 稍等再滑动
-        }
-      });
+            isSettlingRef.current = false;
+          }, 2000); // 延迟解锁，避免重复触发
+        });
     }
-  }, [currentTimeLeft, periodNumber, currentPrices, updatePeriodNumber, updatePeriodStartTime, periodStartTime]);
+  }, [
+    currentTimeLeft,
+    periodNumber,
+    currentPrices,
+    updatePeriodNumber,
+    updatePeriodStartTime,
+    periodStartTime,
+    onPeriodEnd,
+  ]);
 
-  // 初次加载滑动到最右
+  // 初始滚动
   useEffect(() => {
-    const container = scrollRef.current;
-    if (container) {
-      container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
-    }
+    scrollToLatestCard();
   }, []);
 
   if (periodNumber == null) return <div>加载中...</div>;
@@ -113,8 +143,8 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
         className="flex overflow-x-auto space-x-4 p-4 no-scrollbar"
         style={{ scrollBehavior: 'smooth' }}
       >
-        {/* 往期卡片 */}
-        {recentPeriods.map((period) => (
+        {/* 最多展示最近 10 期历史卡片 */}
+        {recentPeriods.slice(-10).map((period) => (
           <div key={`past-${period.periodNumber}`} className="flex-shrink-0 w-[240px]">
             <PastCard
               period={period.periodNumber}

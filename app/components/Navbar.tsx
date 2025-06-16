@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useLatestKline } from "../hooks/useLatestKline";
+import { useKlineData } from '@/hooks/useKlineData';
 import { useKlineStore } from "../../lib/store/klineStore";
 
 export default function Navbar() {
@@ -15,11 +15,10 @@ export default function Navbar() {
   const [selectedToken, setSelectedToken] = useState("PI");
 
   // ✅ 初始化拉取行情数据（内部自带 useEffect）
-  useLatestKline();
+  useKlineData();
 
   // ✅ 直接从 Zustand 中读取 close（收盘价）
-  const { close } = useKlineStore();
-
+  const close = useKlineStore((s) => s.latest?.close);
   // ✅ 处理价格显示
   let displayPrice = "--";
   if (close !== undefined) {

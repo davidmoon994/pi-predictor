@@ -20,10 +20,12 @@ export interface PeriodData {
 interface PeriodStore {
   history: PeriodData[];
   addPeriodData: (data: Omit<PeriodData, 'riseFallRatio'>) => void;
+  setHistory: (data: PeriodData[]) => void;
 }
 
 export const usePeriodStore = create<PeriodStore>((set) => ({
   history: [],
+
   addPeriodData: (data) =>
     set((state) => {
       const up = data.upAmount;
@@ -35,9 +37,9 @@ export const usePeriodStore = create<PeriodStore>((set) => ({
 
       const newItem: PeriodData = { ...data, riseFallRatio: ratio };
 
-      // 保留最近 10 期
       const updated = [newItem, ...state.history].slice(0, 10);
-
       return { history: updated };
     }),
+
+  setHistory: (data) => set({ history: data.slice(-10) }), // 保留最后 10 条
 }));

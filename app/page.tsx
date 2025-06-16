@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import KLineChart from "./components/KLineChart";
@@ -6,16 +7,20 @@ import CardSlider from "./components/CardSlider";
 import { auth } from "../lib/firebase";
 import { useUserStore } from "../lib/store/useStore";
 import { useKlineStore } from "../lib/store/klineStore";
+import { useKlineData } from "@/hooks/useKlineData";
 import { UserData } from "@lib/types";
 import type { UTCTimestamp } from "lightweight-charts";
 
 export default function HomePage() {
+  useKlineData(); // ✅ 拉取历史 + 每分钟更新
+
   const [price, setPrice] = useState("0.00");
   const [user, setUser] = useState<UserData | null>(null);
+
   const points = useUserStore((state) => state.points);
   const klineData = useKlineStore((state) => state.klineData);
-  const setKlineData = useKlineStore((state) => state.setKlineData);
 
+  // ✅ 登录监听
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
       if (firebaseUser) {
@@ -36,41 +41,21 @@ export default function HomePage() {
     return () => unsubscribe();
   }, []);
 
+  // ✅ 自动从 latest 更新价格（可选）
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/kline");
-        const result = await res.json();
-        const rawData = result.data;
+    const latest = klineData[klineData.length - 1];
+    if (latest) {
+      setPrice(parseFloat(latest.close).toFixed(4));
+    }
+  }, [klineData]);
 
-        if (!Array.isArray(rawData)) {
-          console.error("❌ K线数据格式不正确:", rawData);
-          return;
-        }
-
-        setKlineData(rawData);
-
-        if (rawData.length > 0) {
-          const latest = rawData[rawData.length - 1];
-          setPrice(parseFloat(latest.close).toFixed(4));
-        }
-      } catch (err) {
-        console.error("获取K线数据失败", err);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 60000);
-    return () => clearInterval(interval);
-  }, [setKlineData]);
-
-  // ✅ 将原始 klineData 转换为符合 <KLineChart /> 的格式
+  // ✅ 转换为图表格式
   const chartData = klineData.map((item) => ({
-    time: item.timestamp as UTCTimestamp,
-    open: Number(item.open),
-    high: Number(item.high),
-    low: Number(item.low),
-    close: Number(item.close),
+    time: item.timestamp * 1000 as UTCTimestamp,
+    open: item.open,
+    high: item.high,
+    low: item.low,
+    close: item.close,
   }));
 
   return (
@@ -82,7 +67,7 @@ export default function HomePage() {
         style={{ backgroundImage: "url('/page.jpg')" }}
       >
         <div className="absolute top-4 right-4 z-40 bg-yellow-500 text-white px-4 py-1 rounded-full shadow text-sm font-semibold">
-          积分: {points}
+          余额: {points}
         </div>
 
         <div className="absolute inset-0 bg-black/70 z-0" />
@@ -96,7 +81,7 @@ export default function HomePage() {
           />
 
           <div className="w-full h-[250px] bg-white text-gray-800 px-4 sm:px-8 py-4 shadow-lg">
-            <KLineChart data={chartData}  />
+            <KLineChart data={chartData} />
           </div>
 
           <div className="w-full flex justify-center gap-6 bg-gray-800/80 py-3 rounded-xl shadow">

@@ -1,86 +1,56 @@
 // lib/store/klineStore.ts
 //K线数据全局监听（自动获取最新一条数据），用于存行情数据+使用方法设置。
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-type KlineItem = {
-  timestamp: number;       // 秒级时间戳
+export interface KlineItem {
+  timestamp: number;
   open: number;
-  close: number;
   high: number;
   low: number;
+  close: number;
   volume: number;
-  quoteVolume: number;
-  isClosed: boolean;
-};
+  closed: boolean;
+  periodNumber: number;
+  readableTime: string;
+}
 
-type CurrentPrices = {
-  open: number;
-  close: number;
-  high: number;
-  low: number;
-};
+interface KlineState {
+  history: KlineItem[];
+  latest: KlineItem | null;
+  setHistory: (data: KlineItem[]) => void;
+  setLatest: (data: KlineItem) => void;
+  addLatestKline: (data: KlineItem) => void;
+  klineData: KlineItem[]; // 合并后的 getter
+}
 
-type KlineState = {
-  klineData: KlineItem[];
-  latestTimestamp?: number;     // 毫秒级
-  readableTime?: string;        // 本地格式字符串
-  periodNumber?: number;        // 第几期（从2025-06-01开始）
-  periodStartTime: number;      // 本期开始时间，毫秒
-  updatePeriodStartTime: (startTime: number) => void;
-  updatePeriodNumber: (number: number) => void;
-  open?: number;
-  close?: number;
-  currentPrices?: CurrentPrices;  // 新增
-  setKlineData: (data: KlineItem[]) => void;
-  setCurrentPrices: (prices: CurrentPrices) => void;
-  setPeriodNumber: (num: number) => void;
-};
+export const useKlineStore = create<KlineState>()(
+  persist(
+    (set, get) => ({
+      history: [],
+      latest: null,
 
-export const useKlineStore = create<KlineState>((set) => ({
-  klineData: [],
-  periodStartTime: Date.now(),
-  currentPrices: undefined,
+      setHistory: (data) => set({ history: data }),
+      setLatest: (data) => set({ latest: data }),
 
-  updatePeriodStartTime: (startTime) => set({ periodStartTime: startTime }),
-  updatePeriodNumber: (number) => set({ periodNumber: number }),
-  setPeriodNumber: (num) => set({ periodNumber: num }),
-  setCurrentPrices: (prices) => set({ currentPrices: prices }),
+      addLatestKline: (data) => {
+        const history = get().history;
+        const updated = [...history];
 
-  setKlineData: (data) => {
-    if (data.length === 0) {
-      set({
-        klineData: [],
-        open: undefined,
-        close: undefined,
-        readableTime: undefined,
-        periodNumber: undefined,
-        currentPrices: undefined,
-      });
-      return;
-    }
+        if (!updated.length || updated[updated.length - 1].closed) {
+          updated.push(data);
+        } else {
+          updated[updated.length - 1] = data;
+        }
 
-    const latest = data[data.length - 1];
-    const msTimestamp = latest.timestamp * 1000;
-    const date = new Date(msTimestamp);
-
-    const baseTime = new Date('2025-06-06T00:00:00Z').getTime();
-    const minutesSinceBase = Math.floor((msTimestamp - baseTime) / 60000);
-    const periodNumber = minutesSinceBase + 1;
-
-    set({
-      klineData: data,
-      latestTimestamp: msTimestamp,
-      readableTime: date.toLocaleString(),
-      open: latest.open,
-      close: latest.close,
-      periodNumber,
-      periodStartTime: msTimestamp,
-      currentPrices: {
-        open: latest.open,
-        close: latest.close,
-        high: latest.high,
-        low: latest.low,
+        set({ history: updated });
       },
-    });
-  },
-}));
+
+      get klineData() {
+        const { history, latest } = get();
+        return latest ? [...history, latest] : history;
+      },
+    }),
+    { name: 'kline-storage' }
+  )
+);

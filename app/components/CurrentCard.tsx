@@ -12,6 +12,7 @@ import { useUserStore } from '../../lib/store/useStore';
 
 import { fetchPoolAmount } from '../../lib/poolService';
 import { placeBet } from '../../lib/betService';
+import { useKlineData } from '@/hooks/useKlineData';
 
 interface CurrentCardProps {
   timeLeft: number;
@@ -25,12 +26,18 @@ const formatTime = (seconds: number) => {
 };
 
 const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
-  const { open, close, readableTime, periodNumber } = useKlineStore();
+  useKlineData(); // ✅ 每分钟拉取最新数据
+
+  const open = useKlineStore((s) => s.latest?.open);
+  const close = useKlineStore((s) => s.latest?.close);
+  const readableTime = useKlineStore((s) => s.latest?.readableTime);
+  const periodNumber = useKlineStore((s) => s.latest?.periodNumber);
+
   const { user } = useUserStore();
 
   const [countdown, setCountdown] = useState(timeLeft);
   const [locked, setLocked] = useState(false);
-  const [showEgg, setShowEgg] = useState(false); // ✅ 可保留动画控制
+  const [showEgg, setShowEgg] = useState(false);
   const [progress, setProgress] = useState(0);
   const [poolAmount, setPoolAmount] = useState(0);
 
@@ -38,14 +45,16 @@ const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
   const [showBetModal, setShowBetModal] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
 
-  // ✅ 倒计时
+  // ✅ 倒计时逻辑
   useEffect(() => {
     if (countdown <= 0) return;
+
     const timer = setInterval(() => {
-      setCountdown((prev) => prev - 1);
+      setCountdown((prev) => Math.max(prev - 1, 0));
     }, 1000);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [countdown]);
 
   // ✅ 每期更新奖池金额
   useEffect(() => {
@@ -54,7 +63,7 @@ const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
       fetchPoolAmount(String(periodNumber)).then(setPoolAmount);
     }
   }, [periodNumber]);
-  
+
   // ✅ 锁定下注时间（最后60秒）
   useEffect(() => {
     if (countdown <= 60 && !locked) {
@@ -62,7 +71,7 @@ const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
     }
   }, [countdown, locked]);
 
-  // ✅ 保留进度条动画（不触发 drawAndSettle）
+  // ✅ 播放开奖动画
   useEffect(() => {
     if (locked && countdown > 0) {
       setProgress(((60 - countdown) / 60) * 100);
@@ -71,10 +80,10 @@ const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
       setProgress(100);
       setShowEgg(true);
 
-      // ❌ 已移除结算逻辑，结算现在由 CardSlider 控制
+      // ❌ 结算逻辑由 CardSlider 控制
       setTimeout(() => {
         setShowEgg(false);
-      }, 10000); // 动画播放完收起
+      }, 10000); // 播放完动画再关闭
     }
   }, [countdown, locked]);
 
@@ -109,7 +118,9 @@ const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
     }
   };
 
-  if (!open || !close || !readableTime || !periodNumber) return <div>加载中...</div>;
+  if (!open || !close || !readableTime || !periodNumber) {
+    return <div>加载中...</div>;
+  }
 
   return (
     <CardWrapper variant="current">
@@ -120,11 +131,12 @@ const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
       />
 
       <CardWrapper.Up onClick={() => handleBetClick('up')} disabled={locked} />
+
       <CardWrapper.Content
-  open={open?.toString() ?? null}
-  close={close?.toString() ?? null}
-  pool={poolAmount}
-/>
+        open={open?.toString() ?? null}
+        close={close?.toString() ?? null}
+        pool={poolAmount}
+      />
 
       <CardWrapper.Down onClick={() => handleBetClick('down')} disabled={locked} />
 
@@ -139,14 +151,14 @@ const CurrentCard: React.FC<CurrentCardProps> = ({ timeLeft, onBet }) => {
 
       {/* 充值弹窗 */}
       {showWithdraw && (
-  <WithdrawModal
-    isOpen={showWithdraw}
-    userId={user?.uid ?? ''}   // 这里用当前用户id，注意处理user为空的情况
-    onClose={() => setShowWithdraw(false)}
-  />
-)}
+        <WithdrawModal
+          isOpen={showWithdraw}
+          userId={user?.uid ?? ''}
+          onClose={() => setShowWithdraw(false)}
+        />
+      )}
 
-      {/* 开奖动画 */}
+      {/* 开奖彩蛋动画 */}
       {showEgg && <EasterEgg />}
     </CardWrapper>
   );

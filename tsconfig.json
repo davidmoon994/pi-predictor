@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2020", // 支持现代语法（如可选链、Promise.allSettled 等）
-    "lib": ["esnext"], // Node 环境只需 ESNext 库
+    "lib": [
+      "esnext"
+    ], // Node 环境只需 ESNext 库
     "allowJs": true, // 允许 JS 文件
     "skipLibCheck": true, // 跳过 .d.ts 类型检查
     "strict": true, // 开启严格模式
@@ -13,11 +15,22 @@
     "resolveJsonModule": true, // 允许 import JSON
     "baseUrl": ".", // 基础路径
     "paths": {
-      "@/*": ["./app/*"],
-      "@lib/*": ["./lib/*"]
+      "@/*": [
+        "./app/*"
+      ],
+      "@lib/*": [
+        "./lib/*"
+      ]
     },
     "incremental": true,
     "jsx": "preserve" // 保持 JSX 不变（适用于前端项目）
+    ,
+    "isolatedModules": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "app/**/*",
