@@ -1,24 +1,26 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import Navbar from "./components/Navbar";
-import KLineChart from "./components/KLineChart";
-import CardSlider from "./components/CardSlider";
-import { auth } from "../lib/firebase";
-import { useUserStore } from "../lib/store/useStore";
-import { useKlineStore } from "../lib/store/klineStore";
-import { useKlineData } from "@/hooks/useKlineData";
-import { UserData } from "@lib/types";
-import type { UTCTimestamp } from "lightweight-charts";
+import React, { useEffect, useState } from 'react';
+import Navbar from './components/Navbar';
+import KLineChart from './components/KLineChart';
+import CardSlider from './components/CardSlider';
+import { auth } from '../lib/firebase';
+import { useUserStore } from '../lib/store/useStore';
+import { useKlineStore } from '../lib/store/klineStore';
+import { useKlineData } from '@/hooks/useKlineData';
+import { UserData } from '@lib/types';
+import type { UTCTimestamp } from 'lightweight-charts';
 
 export default function HomePage() {
-  useKlineData(); // ✅ 拉取历史 + 每分钟更新
+  useKlineData(); // ✅ 初始化 + 每分钟自动更新
 
-  const [price, setPrice] = useState("0.00");
+  const [price, setPrice] = useState('0.00');
   const [user, setUser] = useState<UserData | null>(null);
 
   const points = useUserStore((state) => state.points);
-  const klineData = useKlineStore((state) => state.klineData);
+  const history = useKlineStore((s) => s.history);
+const latest = useKlineStore((s) => s.latest);
+const klineData = [...history, ...(latest ? [latest] : [])];
 
   // ✅ 登录监听
   useEffect(() => {
@@ -26,11 +28,11 @@ export default function HomePage() {
       if (firebaseUser) {
         setUser({
           uid: firebaseUser.uid,
-          displayName: firebaseUser.displayName || "",
-          email: firebaseUser.email || "",
-          inviteCode: "",
-          inviteUrl: "",
-          qrCodeUrl: "",
+          displayName: firebaseUser.displayName || '',
+          email: firebaseUser.email || '',
+          inviteCode: '',
+          inviteUrl: '',
+          qrCodeUrl: '',
           createdAt: Date.now(),
           points: 0,
         });
@@ -41,17 +43,22 @@ export default function HomePage() {
     return () => unsubscribe();
   }, []);
 
-  // ✅ 自动从 latest 更新价格（可选）
+  // ✅ 更新当前价格
   useEffect(() => {
-    const latest = klineData[klineData.length - 1];
     if (latest) {
-      setPrice(parseFloat(latest.close).toFixed(4));
+      setPrice(latest.close.toFixed(4));
     }
-  }, [klineData]);
+  }, [latest]); // 👈 只监听 latest，最安全
+  
+
+  // ✅ 去重 + 排序
+  const uniqueSortedData = [...klineData]
+    .filter((d, i, arr) => i === 0 || d.timestamp !== arr[i - 1].timestamp)
+    .sort((a, b) => a.timestamp - b.timestamp);
 
   // ✅ 转换为图表格式
-  const chartData = klineData.map((item) => ({
-    time: item.timestamp * 1000 as UTCTimestamp,
+  const chartData = uniqueSortedData.map((item) => ({
+    time: item.timestamp as UTCTimestamp,
     open: item.open,
     high: item.high,
     low: item.low,
@@ -76,7 +83,7 @@ export default function HomePage() {
           <CardSlider
             user={user}
             onPeriodEnd={() => {
-              console.log("当前期结束，执行回调逻辑");
+              console.log('当前期结束，执行回调逻辑');
             }}
           />
 

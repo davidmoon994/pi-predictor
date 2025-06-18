@@ -8,7 +8,7 @@ import { usePeriodStore } from "../../lib/store/usePeriodStore";
 
 export default function GlobalStateListener() {
   const user = useUserStore((state) => state.user);
-  const kline = useKlineStore((state) => state.klineData);
+  const kline = useKlineStore((state) => state.getKlineData());
   const currentPeriodId = usePeriodStore((state) => state.history[0]?.periodNumber);
 const period = currentPeriodId;  // 直接用 currentPeriodId 就是当前期号
 

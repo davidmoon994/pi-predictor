@@ -1,4 +1,4 @@
-// app/admin/add.tsx
+// app/admin/add/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -77,12 +77,17 @@ export default function AddAdminPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700">管理员邮箱</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1 w-full border rounded px-3 py-2"
-            />
+  type="email"
+  value={email}
+  onChange={(e) => {
+    const input = e.target as HTMLInputElement;
+    setEmail(input.value);
+  }}
+  required
+  className="mt-1 w-full border rounded px-3 py-2"
+/>
+
+
           </div>
 
           <div>

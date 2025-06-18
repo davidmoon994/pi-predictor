@@ -2,7 +2,7 @@
 
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
-import GlobalStateListener from "./components/GlobalStateListener";
+
 
 export const metadata = {
   title: "Pi 大陆",
@@ -18,7 +18,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 >
 
         <AuthProvider>
-          <GlobalStateListener />
           <main className="max-w-7xl mx-auto p-4">
             {children} {/* ✅ 渲染 page.tsx 的页面内容 */}
           </main>

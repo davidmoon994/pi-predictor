@@ -1,4 +1,5 @@
 // app/components/CardSlider.tsx
+// app/components/CardSlider.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -6,14 +7,11 @@ import CurrentCard from './CurrentCard';
 import PastCard from './PastCard';
 import NextCard from './NextCard';
 import UpcomingCard from './UpcomingCard';
-import CardWrapper from './ui/CardWrapper';
-import { usePeriodStore } from '../../lib/store/usePeriodStore';
+import { fetchRecentPeriodsFromFirestore, drawAndSettle } from '@lib/drawService';
+import { usePeriodStore } from '@lib/store/usePeriodStore';
 import { useUserStore } from '../../lib/store/useStore';
 import { useKlineStore } from '../../lib/store/klineStore';
-import { drawAndSettle } from '../../lib/drawService';
 import { UserData } from '@lib/types';
-import { onSnapshot, getFirestore, collection, query, orderBy, limit } from 'firebase/firestore';
-import { app } from '@lib/firebase'; // 确保正确导入 firebase client
 
 interface CardSliderProps {
   user: UserData | null;
@@ -27,17 +25,14 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
   const isSettlingRef = useRef(false);
 
   const { user } = useUserStore();
-  const {
-    periodNumber,
-    periodStartTime,
-    updatePeriodNumber,
-    updatePeriodStartTime,
-    currentPrices,
-  } = useKlineStore();
+  const latest = useKlineStore(state => state.latest);
+
+  const periodNumber = latest?.periodNumber ?? 0;
+  const readableTime = latest?.readableTime ?? '';
+  const nextPeriodNumber = periodNumber + 1;
+  const upcomingPeriodNumber = periodNumber + 2;
 
   const [currentTimeLeft, setCurrentTimeLeft] = useState(300);
-  const [nextTimeLeft, setNextTimeLeft] = useState(600);
-  const [upcomingTimeLeft, setUpcomingTimeLeft] = useState(900);
 
   const recentPeriods = usePeriodStore(state => state.history);
   const setHistory = usePeriodStore(state => state.setHistory);
@@ -50,50 +45,40 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
     }
   };
 
-  // 监听 Firestore 最近 10 期数据（结算结果）
+  // 加载最近 10 期历史数据
   useEffect(() => {
-    const db = getFirestore(app);
-    const q = query(collection(db, 'periods'), orderBy('periodNumber', 'desc'), limit(10));
-
-    const unsub = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data()).reverse(); // 从旧到新
-      setHistory(data);
-    });
-
-    return () => unsub();
+    const fetchData = async () => {
+      const recent = await fetchRecentPeriodsFromFirestore();
+      setHistory(recent);
+    };
+    fetchData();
   }, [setHistory]);
 
-  // 倒计时逻辑
+  // ⏱ K线驱动倒计时
   useEffect(() => {
-    if (!periodStartTime) return;
+    if (!latest?.timestamp) return;
 
+    const start = latest.timestamp;
     const timer = setInterval(() => {
       const now = Date.now();
-      const elapsed = now - periodStartTime;
-      const left = Math.floor((periodDuration - (elapsed % periodDuration)) / 1000);
-
-      setCurrentTimeLeft(left);
-      setNextTimeLeft(left + 300);
-      setUpcomingTimeLeft(left + 600);
+      const elapsed = now - start;
+      const timeLeft = Math.floor((periodDuration - (elapsed % periodDuration)) / 1000);
+      setCurrentTimeLeft(timeLeft);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [periodStartTime]);
+  }, [latest?.timestamp]);
 
-  // 自动结算逻辑（带锁）
+  // ⏲ 自动结算逻辑（仅触发一次）
   useEffect(() => {
     if (
       currentTimeLeft === 1 &&
-      periodNumber != null &&
-      currentPrices?.open != null &&
-      currentPrices?.close != null &&
-      currentPrices?.high != null &&
-      currentPrices?.low != null &&
+      latest &&
       !isSettlingRef.current
     ) {
       isSettlingRef.current = true;
 
-      const { open, close, high, low } = currentPrices;
+      const { open, close, high, low, periodNumber, timestamp } = latest;
 
       drawAndSettle(
         periodNumber,
@@ -101,81 +86,45 @@ const CardSlider: React.FC<CardSliderProps> = ({ user: passedUser, onPeriodEnd }
         close,
         high,
         low,
-        0,
-        0,
-        0,
-        periodStartTime ?? Date.now()
-      )
-        .then(() => {
-          updatePeriodNumber(periodNumber + 1);
-          updatePeriodStartTime(Date.now());
-          onPeriodEnd?.();
-
-          requestAnimationFrame(() => scrollToLatestCard());
-        })
-        .finally(() => {
-          setTimeout(() => {
-            isSettlingRef.current = false;
-          }, 2000); // 延迟解锁，避免重复触发
-        });
+        0, 0, 0, timestamp
+      ).then(() => {
+        onPeriodEnd?.();
+        scrollToLatestCard();
+      }).finally(() => {
+        setTimeout(() => {
+          isSettlingRef.current = false;
+        }, 2000);
+      });
     }
-  }, [
-    currentTimeLeft,
-    periodNumber,
-    currentPrices,
-    updatePeriodNumber,
-    updatePeriodStartTime,
-    periodStartTime,
-    onPeriodEnd,
-  ]);
-
-  // 初始滚动
-  useEffect(() => {
-    scrollToLatestCard();
-  }, []);
-
-  if (periodNumber == null) return <div>加载中...</div>;
+  }, [currentTimeLeft, latest, onPeriodEnd]);
 
   return (
-    <div className="relative w-full">
-      <div
-        ref={scrollRef}
-        className="flex overflow-x-auto space-x-4 p-4 no-scrollbar"
-        style={{ scrollBehavior: 'smooth' }}
-      >
-        {/* 最多展示最近 10 期历史卡片 */}
-        {recentPeriods.slice(-10).map((period) => (
+    <div className="relative w-full overflow-x-auto no-scrollbar">
+      <div ref={scrollRef} className="flex space-x-4 p-4 min-w-max">
+        {recentPeriods.slice(-10).map(period => (
           <div key={`past-${period.periodNumber}`} className="flex-shrink-0 w-[240px]">
             <PastCard
-              period={period.periodNumber}
-              open={period.open}
-              close={period.close}
-              pool={period.poolAmount}
-              readableTime={period.readableTime}
-              riseFallRatio={period.riseFallRatio}
-            />
+  periodNumber={period.periodNumber}
+  open={period.open}
+  close={period.close}
+  poolAmount={period.poolAmount}
+  readableTime={period.readableTime}
+  riseFallRatio={period.riseFallRatio}
+/>
+
           </div>
         ))}
 
-        {/* 当前期 */}
         <div className="flex-shrink-0 w-[240px]">
-          <CardWrapper>
-            <CurrentCard timeLeft={currentTimeLeft} onBet={() => {}} />
-          </CardWrapper>
+          <CurrentCard timeLeft={currentTimeLeft} onBet={() => {}} />
         </div>
 
-        {/* 下一期 */}
         <div className="flex-shrink-0 w-[240px]">
-          <CardWrapper>
-            <NextCard timeLeft={nextTimeLeft} onBet={() => {}} />
-          </CardWrapper>
+          <NextCard periodNumber={nextPeriodNumber} timeLeft={currentTimeLeft + 300} onBet={() => {}} />
         </div>
 
-        {/* 即将到来 */}
         <div className="flex-shrink-0 w-[240px]">
-          <CardWrapper>
-            <UpcomingCard timeLeft={upcomingTimeLeft} onBet={() => {}} />
-          </CardWrapper>
+          <UpcomingCard periodNumber={upcomingPeriodNumber} timeLeft={currentTimeLeft + 600} onBet={() => {}} />
         </div>
       </div>
     </div>

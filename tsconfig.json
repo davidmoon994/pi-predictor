@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020", // 支持现代语法（如可选链、Promise.allSettled 等）
     "lib": [
-      "esnext"
+      "esnext","dom.iterable","dom"
     ], // Node 环境只需 ESNext 库
     "allowJs": true, // 允许 JS 文件
     "skipLibCheck": true, // 跳过 .d.ts 类型检查

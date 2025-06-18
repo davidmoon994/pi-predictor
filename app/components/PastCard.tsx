@@ -1,39 +1,48 @@
 // app/components/PastCard.tsx
+// app/components/PastCard.tsx
 'use client';
 
 import React from 'react';
 import CardWrapper from './ui/CardWrapper';
 
 interface PastCardProps {
-  period: number;
+  periodNumber: number;    // 可能你的类型是这个名
   open: number;
   close: number;
-  pool: number;
+  poolAmount: number;
   readableTime: string;
   riseFallRatio: string;
 }
 
+
 const PastCard: React.FC<PastCardProps> = ({
-  period,
+  periodNumber,
   open,
   close,
-  pool,
-  readableTime,
+  poolAmount,
   riseFallRatio,
 }) => {
   return (
     <CardWrapper variant="past">
       <CardWrapper.Header
-        period={period}
+        period={periodNumber}
         countdown="已结束"
-        time={readableTime}
       />
-      <CardWrapper.Content
-  open={open + ''}     // 或 String(open)
-  close={close + ''}   // 或 String(close)
-  pool={pool}
-/>
 
+      {/* ✅ 压缩高度 */}
+      <CardWrapper.Up disabled className="h-6" />
+
+      {/* ✅ 扩展中部展示内容 */}
+      <CardWrapper.Content
+        open={open.toString()}
+        close={close.toString()}
+        pool={poolAmount}
+        ratio={riseFallRatio}
+        isPastCard
+      />
+
+      {/* ✅ 压缩高度 */}
+      <CardWrapper.Down disabled className="h-6" />
     </CardWrapper>
   );
 };
