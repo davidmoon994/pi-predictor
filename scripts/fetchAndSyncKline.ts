@@ -1,5 +1,4 @@
 // scripts/fetchAndSyncKline.ts
-
 import 'dotenv/config';
 import axios from 'axios';
 import { getFirestore } from '../lib/firebase-admin';
@@ -20,20 +19,27 @@ interface KlineData {
   lastUpdated: number;
 }
 
-// 🟢 拉取历史 200 条（首次启动时使用）
-async function fetchInitialKlines(): Promise<KlineData[]> {
-  const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=200`;
-  const headers = {
-    Accept: 'application/json',
-    'User-Agent': 'pi-predictor-sync-script/1.0',
-  };
+// 获取当前周期起始时间（向下对齐 5 分钟）
+function getCurrentPeriodTimestamp(): number {
+  const now = Math.floor(Date.now() / 1000);
+  return now - (now % 300); // 每 300 秒 = 5 分钟
+}
 
-  const res = await axios.get(url, { headers });
-  const raw = res.data;
+// 拉取最近几根 K 线（最多 10 根，防止漏数据）
+async function fetchRecentKlines(): Promise<Record<number, KlineData>> {
+  const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=10`;
 
-  return raw.reverse().map((item: string[]): KlineData => {
+  const res = await axios.get(url, {
+    headers: {
+      Accept: 'application/json',
+      'User-Agent': 'pi-predictor-sync-script/1.0',
+    },
+  });
+
+  const parsed: Record<number, KlineData> = {};
+  for (const item of res.data) {
     const ts = Number(item[0]);
-    return {
+    parsed[ts] = {
       timestamp: ts,
       periodNumber: getPeriodNumber(ts),
       readableTime: formatReadableTime(ts),
@@ -44,79 +50,88 @@ async function fetchInitialKlines(): Promise<KlineData[]> {
       open: parseFloat(item[5]),
       lastUpdated: Date.now(),
     };
-  });
+  }
+  return parsed;
 }
 
-// 🟡 每分钟拉取最新 5 分钟快照（未收盘也抓）
-async function fetchLatestKline(): Promise<KlineData> {
-  const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=2`;
-  const headers = {
-    Accept: 'application/json',
-    'User-Agent': 'pi-predictor-sync-script/1.0',
-  };
-
-  const res = await axios.get(url, { headers });
-  const item = res.data[res.data.length - 1]; // 最新周期快照（可能未收盘）
-
-  const ts = Number(item[0]);
-  return {
-    timestamp: ts,
-    periodNumber: getPeriodNumber(ts),
-    readableTime: formatReadableTime(ts),
-    volume: parseFloat(item[1]),
-    close: parseFloat(item[2]),
-    high: parseFloat(item[3]),
-    low: parseFloat(item[4]),
-    open: parseFloat(item[5]),
-    lastUpdated: Date.now(),
-  };
-}
-
-// 🚀 主同步逻辑
+// 主逻辑
 async function syncKline() {
   const snapshot = await klineRef.orderBy('timestamp', 'asc').get();
   const existingCount = snapshot.size;
 
+  const currentTs = getCurrentPeriodTimestamp();
+  const recent = await fetchRecentKlines();
+  const batch = db.batch();
+
   if (existingCount === 0) {
-    console.log('📦 首次运行，写入历史 200 条 K 线...');
-    const historicalData = await fetchInitialKlines();
-    const batch = db.batch();
-    historicalData.forEach((item: KlineData) => {
-      const docRef = klineRef.doc(item.timestamp.toString());
-      batch.set(docRef, item);
-    });
+    console.log('📦 初始化 Firestore，写入历史数据');
+    Object.values(recent)
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .forEach((item) => {
+        const docRef = klineRef.doc(item.timestamp.toString());
+        batch.set(docRef, item);
+      });
     await batch.commit();
-    console.log('✅ 历史数据已写入完毕');
     return;
   }
 
-  // 🕒 获取当前快照
-  const latest = await fetchLatestKline();
-  const docRef = klineRef.doc(latest.timestamp.toString());
+  const current = recent[currentTs];
 
-  const existingDoc = await docRef.get();
+  let doc: KlineData;
 
-  if (!existingDoc.exists) {
-    // ✅ 当前周期尚未写入，强制写入（无论是否有成交）
-    await docRef.set(latest);
-    console.log(`✅ 写入新快照 @ ${latest.readableTime}`);
+  if (current) {
+    doc = {
+      ...current,
+      lastUpdated: Date.now(),
+    };
   } else {
-    // ✅ 已存在该时间段，更新为最新状态（open/close 变化等）
-    await docRef.set(latest, { merge: true });
-    console.log(`🔄 更新已有快照 @ ${latest.readableTime}`);
+    // 当前周期没有数据，手动构造
+    const previousDoc = await klineRef
+      .doc((currentTs - 300).toString())
+      .get();
+
+    let fallbackPrice = 0;
+
+    if (previousDoc.exists) {
+      fallbackPrice = previousDoc.data()?.close || 0;
+    }
+
+    doc = {
+      timestamp: currentTs,
+      periodNumber: getPeriodNumber(currentTs),
+      readableTime: formatReadableTime(currentTs),
+      volume: 0,
+      open: fallbackPrice,
+      close: fallbackPrice,
+      high: fallbackPrice,
+      low: fallbackPrice,
+      lastUpdated: Date.now(),
+    };
+
+    console.log(`⚠️ 构造缺失周期 ${doc.periodNumber}，价格继承为 ${fallbackPrice}`);
   }
 
-  // 🧹 保留最新 200 条，删除多余
+  const docRef = klineRef.doc(doc.timestamp.toString());
+  const exists = await docRef.get();
+
+  if (!exists.exists) {
+    await docRef.set(doc);
+    console.log(`✅ 写入 K 线 @ ${doc.readableTime}`);
+  } else {
+    await docRef.set(doc, { merge: true });
+    console.log(`🔄 更新快照 @ ${doc.readableTime}`);
+  }
+
+  // 清理旧数据，保留最多 200 条
   const updatedSnapshot = await klineRef.orderBy('timestamp', 'asc').get();
   const excess = updatedSnapshot.size - 200;
   if (excess > 0) {
-    console.log(`🗑 删除最旧 ${excess} 条...`);
-    const batch = db.batch();
+    const cleanupBatch = db.batch();
     updatedSnapshot.docs.slice(0, excess).forEach((doc) => {
-      batch.delete(doc.ref);
+      cleanupBatch.delete(doc.ref);
     });
-    await batch.commit();
-    console.log('✅ 旧数据清理完毕');
+    await cleanupBatch.commit();
+    console.log(`🧹 删除最旧 ${excess} 条`);
   }
 }
 
@@ -124,3 +139,4 @@ syncKline().catch((err) => {
   console.error('❌ 同步失败:', err.message);
   process.exit(1);
 });
+
