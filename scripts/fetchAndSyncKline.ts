@@ -19,13 +19,13 @@ interface KlineData {
   lastUpdated: number;
 }
 
-// 获取当前周期起始时间（向下对齐 5 分钟）
-function getCurrentPeriodTimestamp(): number {
+// 对齐到 5 分钟
+function getAlignedTimestamp(offsetMinutes = 0): number {
   const now = Math.floor(Date.now() / 1000);
-  return now - (now % 300); // 每 300 秒 = 5 分钟
+  return now - (now % 300) - offsetMinutes * 60;
 }
 
-// 拉取最近几根 K 线（最多 10 根，防止漏数据）
+// 获取最近 10 条 K 线（用作参考）
 async function fetchRecentKlines(): Promise<Record<number, KlineData>> {
   const url = `https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=PI_USDT&interval=5m&limit=10`;
 
@@ -54,83 +54,64 @@ async function fetchRecentKlines(): Promise<Record<number, KlineData>> {
   return parsed;
 }
 
-// 主逻辑
 async function syncKline() {
-  const snapshot = await klineRef.orderBy('timestamp', 'asc').get();
-  const existingCount = snapshot.size;
+  const recentData = await fetchRecentKlines();
 
-  const currentTs = getCurrentPeriodTimestamp();
-  const recent = await fetchRecentKlines();
+  // 🔁 补齐当前 + 前两个周期（3 根）
+  const periodsToCheck = [0, 5, 10].map((offset) => getAlignedTimestamp(offset));
+
   const batch = db.batch();
 
-  if (existingCount === 0) {
-    console.log('📦 初始化 Firestore，写入历史数据');
-    Object.values(recent)
-      .sort((a, b) => a.timestamp - b.timestamp)
-      .forEach((item) => {
-        const docRef = klineRef.doc(item.timestamp.toString());
-        batch.set(docRef, item);
-      });
-    await batch.commit();
-    return;
-  }
+  for (const ts of periodsToCheck.reverse()) {
+    const exists = await klineRef.doc(ts.toString()).get();
 
-  const current = recent[currentTs];
-
-  let doc: KlineData;
-
-  if (current) {
-    doc = {
-      ...current,
-      lastUpdated: Date.now(),
-    };
-  } else {
-    // 当前周期没有数据，手动构造
-    const previousDoc = await klineRef
-      .doc((currentTs - 300).toString())
-      .get();
-
-    let fallbackPrice = 0;
-
-    if (previousDoc.exists) {
-      fallbackPrice = previousDoc.data()?.close || 0;
+    if (exists.exists) {
+      // 🔄 更新 lastUpdated（可选）
+      batch.set(klineRef.doc(ts.toString()), { lastUpdated: Date.now() }, { merge: true });
+      continue;
     }
 
-    doc = {
-      timestamp: currentTs,
-      periodNumber: getPeriodNumber(currentTs),
-      readableTime: formatReadableTime(currentTs),
-      volume: 0,
-      open: fallbackPrice,
-      close: fallbackPrice,
-      high: fallbackPrice,
-      low: fallbackPrice,
-      lastUpdated: Date.now(),
-    };
+    let doc: KlineData;
+    const match = recentData[ts];
 
-    console.log(`⚠️ 构造缺失周期 ${doc.periodNumber}，价格继承为 ${fallbackPrice}`);
+    if (match) {
+      doc = {
+        ...match,
+        lastUpdated: Date.now(),
+      };
+    } else {
+      // ❗️没抓到这一根 → 继承前一根 close 来构造
+      const prev = await klineRef.doc((ts - 300).toString()).get();
+      const price = prev.exists ? prev.data()?.close || 0 : 0;
+
+      doc = {
+        timestamp: ts,
+        periodNumber: getPeriodNumber(ts),
+        readableTime: formatReadableTime(ts),
+        volume: 0,
+        open: price,
+        close: price,
+        high: price,
+        low: price,
+        lastUpdated: Date.now(),
+      };
+
+      console.log(`⚠️ 构造缺失周期 ${doc.periodNumber}，继承价格为 ${price}`);
+    }
+
+    batch.set(klineRef.doc(ts.toString()), doc);
+    console.log(`✅ 写入周期 ${doc.periodNumber} @ ${doc.readableTime}`);
   }
 
-  const docRef = klineRef.doc(doc.timestamp.toString());
-  const exists = await docRef.get();
+  await batch.commit();
 
-  if (!exists.exists) {
-    await docRef.set(doc);
-    console.log(`✅ 写入 K 线 @ ${doc.readableTime}`);
-  } else {
-    await docRef.set(doc, { merge: true });
-    console.log(`🔄 更新快照 @ ${doc.readableTime}`);
-  }
-
-  // 清理旧数据，保留最多 200 条
-  const updatedSnapshot = await klineRef.orderBy('timestamp', 'asc').get();
-  const excess = updatedSnapshot.size - 200;
+  // 🧹 最多保留 200 条
+  const all = await klineRef.orderBy('timestamp', 'asc').get();
+  const excess = all.size - 200;
   if (excess > 0) {
-    const cleanupBatch = db.batch();
-    updatedSnapshot.docs.slice(0, excess).forEach((doc) => {
-      cleanupBatch.delete(doc.ref);
-    });
-    await cleanupBatch.commit();
+    const cleanup = db.batch();
+    all.docs.slice(0, excess).forEach((doc) => cleanup.delete(doc.ref));
+    await cleanup.commit();
     console.log(`🧹 删除最旧 ${excess} 条`);
   }
 }
@@ -139,4 +120,3 @@ syncKline().catch((err) => {
   console.error('❌ 同步失败:', err.message);
   process.exit(1);
 });
-
